@@ -10,8 +10,7 @@ TERMUX_PKG_DEPENDS="linux-api-headers-glibc"
 TERMUX_PKG_RECOMMENDS="glibc-runner"
 TERMUX_PKG_NO_STATICSPLIT=true
 TERMUX_PKG_CONFFILES="glibc/etc/gai.conf, glibc/etc/locale.gen"
-TERMUX_PKG_SEPARATE_SUB_DEPENDS=true
-TERMUX_PKG_BUILD_MULTILIB=true
+
 
 termux_step_pre_configure() {
 	if [ "$TERMUX_PACKAGE_LIBRARY" != "glibc" ]; then
@@ -25,7 +24,7 @@ termux_step_pre_configure() {
 
 	# installing special scripts for correct operation of system calls
 	cp ${TERMUX_PKG_BUILDER_DIR}/{shm{at,ctl,dt,get}.c,mprotect.c,syscall.c,fakesyscall*.h,fake_epoll_pwait2.c,setfs{u,g}id.c} \
-		${TERMUX_PKG_SRCDIR}/sysdeps/unix/sysv/linux/
+		${TERMUX_PKG_SRCDIR}/sysdeps/unix/sysv/linux/ #*
 
 	# installing and configuring scripts for parsing users/groups according to the android standard
 	cp ${TERMUX_PKG_BUILDER_DIR}/{android_passwd_group.*,android_system_user_ids.h} \
@@ -105,10 +104,10 @@ termux_step_pre_configure() {
 }
 
 termux_step_configure() {
-	echo "slibdir=${TERMUX__PREFIX__LIB_DIR}" > configparms
-	echo "rtlddir=${TERMUX__PREFIX__LIB_DIR}" >> configparms
-	echo "sbindir=${TERMUX_PREFIX}/bin" >> configparms
-	echo "rootsbindir=${TERMUX_PREFIX}/bin" >> configparms
+	echo "slibdir=./data/data/com.linux.term/files/linux/lib" > configparms
+	echo "rtlddir=/data/data/com.linux.term/files/linux/lib" >> configparms
+	echo "sbindir=/data/data/com.linux.term/files/linux/bin" >> configparms
+	echo "rootsbindir=/data/data/com.linux.term/files/linux/bin" >> configparms
 
 	local _configure_flags=()
 	case $TERMUX_ARCH in
@@ -119,7 +118,7 @@ termux_step_configure() {
 
 	local _pkgversion="GNU libc for Android"
 	if [ -n "${TERMUX_APP_PACKAGE-}" ]; then
-		_pkgversion+="/${TERMUX_APP_PACKAGE}"
+		_pkgversion+="//data/data/com.linux.term/"
 	fi
 
 	CFLAGS="${CFLAGS/-Wp,-D_FORTIFY_SOURCE=2 / }"
@@ -129,10 +128,10 @@ termux_step_configure() {
 		CFLAGS+=" -DMULTILIB_GLIBC"
 	fi
 	${TERMUX_PKG_SRCDIR}/configure \
-		--prefix=$TERMUX_PREFIX \
-		--libdir=$TERMUX__PREFIX__LIB_DIR \
-		--libexecdir=$TERMUX__PREFIX__LIB_DIR \
-		--includedir=$TERMUX__PREFIX__INCLUDE_DIR \
+		--prefix=/data/data/com.linux.term/files/linux \
+		--libdir=/data/data/com.linux.term/files/linux/lib \
+		--libexecdir=/data/data/com.linux.term/files/linux/libexec \
+		--includedir=/data/data/com.linux.term/files/linux/include \
 		--host=$TERMUX_HOST_PLATFORM \
 		--build=$TERMUX_HOST_PLATFORM \
 		--target=$TERMUX_HOST_PLATFORM \
@@ -160,13 +159,13 @@ termux_step_make() {
 termux_glibc_make_syscall_without_fsc() {
 	local libname="libsyscall_without_fsc.so"
 	echo "Compiling '${libname}'..."
-	$CC ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${TERMUX__PREFIX__LIB_DIR}/${libname} \
+	$CC ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o /data/data/com.linux.term/files/linux/lib/${libname} \
 		-shared -DWITHOUT_FAKESYSCALL
 	echo "DONE"
 }
 
 termux_step_make_install() {
-	rm -fr ${TERMUX__PREFIX__INCLUDE_DIR}/gnu
+	rm -fr /data/data/com.linux.term/files/linux/include/gnu
 
 	if [ "$TERMUX_ON_DEVICE_BUILD" = "true" ]; then
 		# If there have been no glibc updates on the device for a long time,
@@ -176,39 +175,39 @@ termux_step_make_install() {
 		local glibc_dir="${TERMUX_PKG_TMPDIR}/glibc/"
 		mkdir -p ${glibc_dir}
 		make DESTDIR=${glibc_dir} elf/ldso_install install-lib
-		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/libc.so.6
-		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${TERMUX__PREFIX__LIB_DIR}
+		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}//data/data/com.linux.term/files/linux/lib/libc.so.6
+		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}//data/data/com.linux.term/files/linux/lib/* /data/data/com.linux.term/files/linux/lib
 	fi
 	make install
 
-	rm -f ${TERMUX_PREFIX}/etc/ld.so.cache
-	rm -f ${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
+	rm -f /data/data/com.linux.term/files/linux/etc/ld.so.cache
+	rm -f /data/data/com.linux.term/files/linux/bin/{tzselect,zdump,zic}
 
-	install -dm755 ${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d
-	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf ${TERMUX_PREFIX}/etc/nscd.conf
-	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles ${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d/nscd.conf
-	install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf ${TERMUX_PREFIX}/etc/gai.conf
-	install -m755 ${TERMUX_PKG_BUILDER_DIR}/locale-gen ${TERMUX_PREFIX}/bin
-	sed -i "s|@TERMUX_PREFIX@|$TERMUX_PREFIX|g; s|@TERMUX_PREFIX_CLASSICAL@|$TERMUX_PREFIX_CLASSICAL|g" \
-		${TERMUX_PREFIX}/bin/locale-gen
+	install -dm755 /data/data/com.linux.term/files/linux/lib/tmpfiles.d
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf /data/data/com.linux.term/files/linux/etc/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles /data/data/com.linux.term/files/linux/lib/tmpfiles.d/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf /data/data/com.linux.term/files/linux/etc/gai.conf
+	install -m755 ${TERMUX_PKG_BUILDER_DIR}/locale-gen /data/data/com.linux.term/files/linux/bin
+	sed -i "s|@TERMUX_PREFIX@|/data/data/com.linux.term/files/linux|g; s|@TERMUX_PREFIX_CLASSICAL@|$TERMUX_PREFIX_CLASSICAL|g" \
+		/data/data/com.linux.term/files/linux/bin/locale-gen
 
-	install -m644 ${TERMUX_PKG_BUILDER_DIR}/locale.gen.txt ${TERMUX_PREFIX}/etc/locale.gen
+	install -m644 ${TERMUX_PKG_BUILDER_DIR}/locale.gen.txt /data/data/com.linux.term/files/linux/etc/locale.gen
 	sed -e '1,3d' -e 's|/| |g' -e 's|\\| |g' -e 's|^|#|g' \
-		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED >> ${TERMUX_PREFIX}/etc/locale.gen
+		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED >> /data/data/com.linux.term/files/linux/etc/locale.gen
 
 	sed -e '1,3d' -e 's|/| |g' -e 's| \\||g' \
-		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > ${TERMUX_PREFIX}/share/i18n/SUPPORTED
+		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > /data/data/com.linux.term/files/linux/share/i18n/SUPPORTED
 
-	install -dm755 ${TERMUX__PREFIX__LIB_DIR}/locale
+	install -dm755 /data/data/com.linux.term/files/linux/lib/locale
 	make -C ${TERMUX_PKG_SRCDIR}/localedata objdir=${TERMUX_PKG_BUILDDIR} \
 		SUPPORTED-LOCALES="C.UTF-8/UTF-8 en_US.UTF-8/UTF-8" install-locale-files
-	sed -i '/#C\.UTF-8 /d' ${TERMUX_PREFIX}/etc/locale.gen
+	sed -i '/#C\.UTF-8 /d' /data/data/com.linux.term/files/linux/etc/locale.gen
 
-	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt.h ${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt.h
-	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt-config.h ${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt-config.h
+	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt.h /data/data/com.linux.term/files/linux/include/sys/sdt.h
+	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt-config.h /data/data/com.linux.term/files/linux/include/sys/sdt-config.h
 
-	ln -sfr $PATH_DYNAMIC_LINKER ${TERMUX_PREFIX}/bin/ld.so
-	ln -sfr $PATH_DYNAMIC_LINKER ${TERMUX__PREFIX__LIB_DIR}/ld.so
+	ln -sfr $PATH_DYNAMIC_LINKER /data/data/com.linux.term/files/linux/bin/ld.so
+	ln -sfr $PATH_DYNAMIC_LINKER /data/data/com.linux.term/files/linux/lib/ld.so
 
 	termux_glibc_make_syscall_without_fsc
 }
@@ -218,19 +217,19 @@ termux_step_make_install_multilib() {
 	mkdir -p ${glibc32_dir}
 	make DESTDIR=${glibc32_dir} install
 
-	cp -TR ${glibc32_dir}/${TERMUX__PREFIX__LIB_DIR} $TERMUX__PREFIX__LIB_DIR
-	cp -TR ${glibc32_dir}/${TERMUX__PREFIX__INCLUDE_DIR} $TERMUX__PREFIX__INCLUDE_DIR
-	cp -r ${glibc32_dir}/${TERMUX_PREFIX}/bin/ldd ${TERMUX_PREFIX}/bin/ldd32
-	cp -r ${glibc32_dir}/${TERMUX_PREFIX}/bin/ldconfig ${TERMUX_PREFIX}/bin/ldconfig32
-	cp -r ${glibc32_dir}/${TERMUX_PREFIX}/bin/getconf ${TERMUX_PREFIX}/bin/getconf32
-	sed -i 's/ldd/ldd32/g' ${TERMUX_PREFIX}/bin/ldd32
+	cp -TR ${glibc32_dir}//data/data/com.linux.term/files/linux/lib $TERMUX__PREFIX__LIB_DIR
+	cp -TR ${glibc32_dir}//data/data/com.linux.term/files/linux/include /data/data/com.linux.term/files/linux/include
+	cp -r ${glibc32_dir}//data/data/com.linux.term/files/linux/bin/ldd /data/data/com.linux.term/files/linux/bin/ldd32
+	cp -r ${glibc32_dir}//data/data/com.linux.term/files/linux/bin/ldconfig /data/data/com.linux.term/files/linux/bin/ldconfig32
+	cp -r ${glibc32_dir}//data/data/com.linux.term/files/linux/bin/getconf /data/data/com.linux.term/files/linux/bin/getconf32
+	sed -i 's/ldd/ldd32/g' /data/data/com.linux.term/files/linux/bin/ldd32
 
-	rm -fr ${TERMUX__PREFIX__LIB_DIR}/locale
-	ln -sfr ${TERMUX__PREFIX__BASE_LIB_DIR}/locale ${TERMUX__PREFIX__LIB_DIR}/locale
+	rm -fr /data/data/com.linux.term/files/linux/lib/locale
+	ln -sfr ${TERMUX__PREFIX__BASE_LIB_DIR}/locale /data/data/com.linux.term/files/linux/lib/locale
 
-	ln -sfr ${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} $PATH_DYNAMIC_LINKER
-	ln -sfr ${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} ${TERMUX_PREFIX}/bin/ld32.so
-	ln -sfr ${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} ${TERMUX__PREFIX__LIB_DIR}/ld.so
+	ln -sfr /data/data/com.linux.term/files/linux/lib/${DYNAMIC_LINKER} $PATH_DYNAMIC_LINKER
+	ln -sfr /data/data/com.linux.term/files/linux/lib/${DYNAMIC_LINKER} /data/data/com.linux.term/files/linux/bin/ld32.so
+	ln -sfr /data/data/com.linux.term/files/linux/lib/${DYNAMIC_LINKER} /data/data/com.linux.term/files/linux/lib/ld.so
 
 	termux_glibc_make_syscall_without_fsc
 }

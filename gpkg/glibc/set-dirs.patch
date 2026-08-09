@@ -19,7 +19,7 @@ index 4c3521db..06b6faa7 100644
  
    /* open a dir stream */
 -  dirp = opendir ("/tmp");
-+  dirp = opendir ("@TERMUX_PREFIX_CLASSICAL@/tmp");
++  dirp = opendir ("/data/data/com.linux.term/files/linux/tmp");
    if (dirp == NULL)
      {
        if (errno == ENOENT)
@@ -45,7 +45,7 @@ index 29e7a4dd..56f465d5 100644
       the work but this does not matter, since it is not for production
       use.  */
 -  static const char preload_file[] = "/etc/ld.so.preload";
-+  static const char preload_file[] = "@TERMUX_PREFIX@/etc/ld.so.preload";
++  static const char preload_file[] = "/data/data/com.linux.term/files/linux/etc/ld.so.preload";
    if (__glibc_unlikely (__access (preload_file, R_OK) == 0))
      {
        /* Read the contents of the file.  */
@@ -58,7 +58,7 @@ index 50498460..14db4aa9 100644
  
        /* First add the debuginfo file name only.  */
 -      static const char usrlibdebug[]= "/usr/lib/debug/";
-+      static const char usrlibdebug[]= "@TERMUX_PREFIX@/lib/debug/";
++      static const char usrlibdebug[]= "/data/data/com.linux.term/files/linux/lib/debug/";
        char *workbuf = (char *) alloca (sizeof (usrlibdebug)
  				       + (cp - realname)
  				       + strlen (debuginfo_fname));
@@ -68,8 +68,8 @@ index 50498460..14db4aa9 100644
  	 files are created.  */
 -      ext_name = (char *) alloca (strlen (name) + sizeof "/var/tmp/");
 -      stpcpy (stpcpy (ext_name, "/var/tmp/"), name);
-+      ext_name = (char *) alloca (strlen (name) + sizeof "@TERMUX_PREFIX@/var/tmp/");
-+      stpcpy (stpcpy (ext_name, "@TERMUX_PREFIX@/var/tmp/"), name);
++      ext_name = (char *) alloca (strlen (name) + sizeof "/data/data/com.linux.term/files/linux/var/tmp/");
++      stpcpy (stpcpy (ext_name, "/data/data/com.linux.term/files/linux/var/tmp/"), name);
        name = ext_name;
  
        fd = open (ext_name, O_RDONLY);
@@ -82,7 +82,7 @@ index ef8b9680..d900f172 100644
    { "LD_PRELOAD",              FILTERED_VALUE },
    { "LD_PROFILE",              PROFILE_LIB },
 -  { "LD_PROFILE_OUTPUT",       "/var/tmp" },      /* Not actually used.  */
-+  { "LD_PROFILE_OUTPUT",       "@TERMUX_PREFIX@/var/tmp" },      /* Not actually used.  */
++  { "LD_PROFILE_OUTPUT",       "/data/data/com.linux.term/files/linux/var/tmp" },      /* Not actually used.  */
    { "MALLOC_ARENA_MAX",        FILTERED_VALUE },
    { "MALLOC_PERTURB_",         FILTERED_VALUE },
    { "MALLOC_TRACE",            FILTERED_VALUE },
@@ -95,7 +95,7 @@ index cc27f3bb..f541b244 100644
  #include "hesiod_p.h"
  
 -#define _PATH_HESIOD_CONF "/etc/hesiod.conf"
-+#define _PATH_HESIOD_CONF "@TERMUX_PREFIX@/etc/hesiod.conf"
++#define _PATH_HESIOD_CONF "/data/data/com.linux.term/files/linux/etc/hesiod.conf"
  
  /* Forward */
  
@@ -108,7 +108,7 @@ index 31c23d8f..f8e9bca0 100644
  
  /* The directory that contains shared POSIX objects.  */
 -#define SHMDIR _PATH_DEV "shm/"
-+#define SHMDIR "@TERMUX_PREFIX_CLASSICAL@/tmp/"
++#define SHMDIR "/data/local/tmp/"
  
  struct shmdir_name
  {
@@ -122,8 +122,8 @@ index 19740f49..214af2b0 100644
  {
 -  char tmp[] = "/tmp/ftwXXXXXX";
 -  char tmp2[] = "/tmp/ftwXXXXXX/ftwXXXXXX";
-+  char tmp[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/ftwXXXXXX";
-+  char tmp2[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/ftwXXXXXX/ftwXXXXXX";
++  char tmp[] = "/data/data/com.linux.term/files/linux/tmp/ftwXXXXXX";
++  char tmp2[] = "/data/data/com.linux.term/files/linux/tmp/ftwXXXXXX/ftwXXXXXX";
    char *dname;
    char *dname2;
    int r;
@@ -136,7 +136,7 @@ index 82c3ff39..aef0a277 100644
  main (void)
  {
 -  char name[32] = "/tmp/ftwXXXXXX", *p;
-+  char name[32] = "@TERMUX_PREFIX_CLASSICAL@/tmp/ftwXXXXXX", *p;
++  char name[32] = "/data/data/com.linux.term/files/linux/tmp/ftwXXXXXX", *p;
    int ret, i, result = 0, fd, fd1, fd2;
  
    if (mkdtemp (name) == NULL)
@@ -149,7 +149,7 @@ index f007621a..402275c9 100644
  	__close (_IO_fileno ((FILE *) p));
  
 -      execl ("/bin/sh", "sh", "-c", command, (char *) 0);
-+      execl ("@TERMUX_PREFIX@/bin/sh", "sh", "-c", command, (char *) 0);
++      execl ("/data/data/com.linux.term/files/linux/bin/sh", "sh", "-c", command, (char *) 0);
        _exit (127);
      }
    __close (child_end);
@@ -162,7 +162,7 @@ index 3bf6a1f6..c258d455 100644
  #if defined __USE_MISC || defined __USE_XOPEN
  /* Default path prefix for `tempnam' and `tmpnam'.  */
 -# define P_tmpdir	"/tmp"
-+# define P_tmpdir	"@TERMUX_PREFIX_CLASSICAL@/tmp"
++# define P_tmpdir	"/data/data/com.linux.term/files/linux/tmp"
  #endif
  
  #define L_tmpnam 20
@@ -176,8 +176,8 @@ index e1a05d1c..ddcaad71 100644
  
 -#define SERVER	"/tmp/serversocket"
 -#define CLIENT	"/tmp/mysocket"
-+#define SERVER	"@TERMUX_PREFIX_CLASSICAL@/tmp/serversocket"
-+#define CLIENT	"@TERMUX_PREFIX_CLASSICAL@/tmp/mysocket"
++#define SERVER	"/data/data/com.linux.term/files/linux/tmp/serversocket"
++#define CLIENT	"/data/data/com.linux.term/files/linux/tmp/mysocket"
  #define MAXMSG	512
  #define MESSAGE	"Yow!!! Are we having fun yet?!?"
  
@@ -190,7 +190,7 @@ index 0f3cc3ff..30e85462 100644
  #include <unistd.h>
  
 -#define SERVER	"/tmp/serversocket"
-+#define SERVER	"@TERMUX_PREFIX_CLASSICAL@/tmp/serversocket"
++#define SERVER	"/data/data/com.linux.term/files/linux/tmp/serversocket"
  #define MAXMSG	512
  
  int
@@ -203,7 +203,7 @@ index 090ae697..89457cc3 100644
  #include <pthread.h>
  
 -#define FILENAME	"/tmp/foo"
-+#define FILENAME	"@TERMUX_PREFIX_CLASSICAL@/tmp/foo"
++#define FILENAME	"/data/data/com.linux.term/files/linux/tmp/foo"
  #define NUM_THREADS	3
  #define ITERATIONS	5
  
@@ -212,7 +212,7 @@ index 090ae697..89457cc3 100644
    };
  
 -  fd = open ("/tmp/foo", O_RDWR | O_CREAT, 0666);
-+  fd = open ("@TERMUX_PREFIX_CLASSICAL@/tmp/foo", O_RDWR | O_CREAT, 0666);
++  fd = open ("/data/data/com.linux.term/files/linux/tmp/foo", O_RDWR | O_CREAT, 0666);
  
    for (i = 0; i < ITERATIONS; i++)
      {
@@ -225,7 +225,7 @@ index 455d80df..29862d37 100644
  /* This should only be defined on systems with a BSD compatible ypbind */
  #ifndef BINDINGDIR
 -# define BINDINGDIR "/var/yp/binding"
-+# define BINDINGDIR "@TERMUX_PREFIX@/var/yp/binding"
++# define BINDINGDIR "/data/data/com.linux.term/files/linux/var/yp/binding"
  #endif
  
  struct dom_binding
@@ -238,15 +238,15 @@ index 0906de29..3fc62956 100644
  
  /* Path of the file where the PID of the running system is stored.  */
 -#define _PATH_NSCDPID	 "/var/run/nscd/nscd.pid"
-+#define _PATH_NSCDPID	 "@TERMUX_PREFIX@/var/run/nscd/nscd.pid"
++#define _PATH_NSCDPID	 "/data/data/com.linux.term/files/linux/var/run/nscd/nscd.pid"
  
  /* Path for the Unix domain socket.  */
 -#define _PATH_NSCDSOCKET "/var/run/nscd/socket"
-+#define _PATH_NSCDSOCKET "@TERMUX_PREFIX@/var/run/nscd/socket"
++#define _PATH_NSCDSOCKET "/data/data/com.linux.term/files/linux/var/run/nscd/socket"
  
  /* Path for the configuration file.  */
 -#define _PATH_NSCDCONF	 "/etc/nscd.conf"
-+#define _PATH_NSCDCONF	 "@TERMUX_PREFIX@/etc/nscd.conf"
++#define _PATH_NSCDCONF	 "/data/data/com.linux.term/files/linux/etc/nscd.conf"
  
  /* Maximum allowed length for the key.  */
  #define MAXKEYLEN 1024
@@ -259,7 +259,7 @@ index b709418b..0aff48d1 100644
        printf ("gethostbyname_r failed: %s (errno: %m)\n", strerror (res));
  
 -      if (access ("/etc/resolv.conf", R_OK))
-+      if (access ("@TERMUX_PREFIX@/etc/resolv.conf", R_OK))
++      if (access ("/data/data/com.linux.term/files/linux/etc/resolv.conf", R_OK))
  	{
  	  puts ("DNS probably not set up");
  	  return 0;
@@ -274,12 +274,12 @@ index d5aa4b43..1cabc20e 100644
 -DATABASES = $(wildcard /etc/passwd /etc/group /etc/ethers /etc/protocols \
 -		       /etc/rpc /etc/services /etc/shadow /etc/gshadow \
 -		       /etc/netgroup)
-+DATABASES = $(wildcard @TERMUX_PREFIX@/etc/passwd @TERMUX_PREFIX@/etc/group @TERMUX_PREFIX@/etc/ethers @TERMUX_PREFIX@/etc/protocols \
-+		       @TERMUX_PREFIX@/etc/rpc @TERMUX_PREFIX@/etc/services @TERMUX_PREFIX@/etc/shadow @TERMUX_PREFIX@/etc/gshadow \
-+		       @TERMUX_PREFIX@/etc/netgroup)
++DATABASES = $(wildcard /data/data/com.linux.term/files/linux/etc/passwd /data/data/com.linux.term/files/linux/etc/group /data/data/com.linux.term/files/linux/etc/ethers /data/data/com.linux.term/files/linux/etc/protocols \
++		       /data/data/com.linux.term/files/linux/etc/rpc /data/data/com.linux.term/files/linux/etc/services /data/data/com.linux.term/files/linux/etc/shadow /data/data/com.linux.term/files/linux/etc/gshadow \
++		       /data/data/com.linux.term/files/linux/etc/netgroup)
  
 -VAR_DB = /var/db
-+VAR_DB = @TERMUX_PREFIX@/var/db
++VAR_DB = /data/data/com.linux.term/files/linux/var/db
  
  AWK = awk
  MAKEDB = makedb --quiet
@@ -288,7 +288,7 @@ index d5aa4b43..1cabc20e 100644
  
  
 -$(VAR_DB)/passwd.db: /etc/passwd
-+$(VAR_DB)/passwd.db: @TERMUX_PREFIX@/etc/passwd
++$(VAR_DB)/passwd.db: /data/data/com.linux.term/files/linux/etc/passwd
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) 'BEGIN { FS=":"; OFS=":" } \
  		 /^[ \t]*$$/ { next } \
@@ -297,7 +297,7 @@ index d5aa4b43..1cabc20e 100644
  	@echo "done."
  
 -$(VAR_DB)/group.db: /etc/group
-+$(VAR_DB)/group.db: @TERMUX_PREFIX@/etc/group
++$(VAR_DB)/group.db: /data/data/com.linux.term/files/linux/etc/group
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) 'BEGIN { FS=":"; OFS=":" } \
  		 /^[ \t]*$$/ { next } \
@@ -306,7 +306,7 @@ index d5aa4b43..1cabc20e 100644
  	@echo "done."
  
 -$(VAR_DB)/ethers.db: /etc/ethers
-+$(VAR_DB)/ethers.db: @TERMUX_PREFIX@/etc/ethers
++$(VAR_DB)/ethers.db: /data/data/com.linux.term/files/linux/etc/ethers
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) '/^[ \t]*$$/ { next } \
  		 /^[ \t]*#/ { next } \
@@ -315,7 +315,7 @@ index d5aa4b43..1cabc20e 100644
  	@echo "done."
  
 -$(VAR_DB)/protocols.db: /etc/protocols
-+$(VAR_DB)/protocols.db: @TERMUX_PREFIX@/etc/protocols
++$(VAR_DB)/protocols.db: /data/data/com.linux.term/files/linux/etc/protocols
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) '/^[ \t]*$$/ { next } \
  		 /^[ \t]*#/ { next } \
@@ -324,7 +324,7 @@ index d5aa4b43..1cabc20e 100644
  	@echo "done."
  
 -$(VAR_DB)/rpc.db: /etc/rpc
-+$(VAR_DB)/rpc.db: @TERMUX_PREFIX@/etc/rpc
++$(VAR_DB)/rpc.db: /data/data/com.linux.term/files/linux/etc/rpc
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) '/^[ \t]*$$/ { next } \
  		 /^[ \t]*#/ { next } \
@@ -333,7 +333,7 @@ index d5aa4b43..1cabc20e 100644
  	@echo "done."
  
 -$(VAR_DB)/services.db: /etc/services
-+$(VAR_DB)/services.db: @TERMUX_PREFIX@/etc/services
++$(VAR_DB)/services.db: /data/data/com.linux.term/files/linux/etc/services
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) 'BEGIN { FS="[ \t/]+" } \
  		 /^[ \t]*$$/ { next } \
@@ -342,7 +342,7 @@ index d5aa4b43..1cabc20e 100644
  	@echo "done."
  
 -$(VAR_DB)/shadow.db: /etc/shadow
-+$(VAR_DB)/shadow.db: @TERMUX_PREFIX@/etc/shadow
++$(VAR_DB)/shadow.db: /data/data/com.linux.term/files/linux/etc/shadow
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) 'BEGIN { FS=":"; OFS=":" } \
  		 /^[ \t]*$$/ { next } \
@@ -351,7 +351,7 @@ index d5aa4b43..1cabc20e 100644
  	fi
  
 -$(VAR_DB)/gshadow.db: /etc/gshadow
-+$(VAR_DB)/gshadow.db: @TERMUX_PREFIX@/etc/gshadow
++$(VAR_DB)/gshadow.db: /data/data/com.linux.term/files/linux/etc/gshadow
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) 'BEGIN { FS=":"; OFS=":" } \
  		 /^[ \t]*$$/ { next } \
@@ -360,7 +360,7 @@ index d5aa4b43..1cabc20e 100644
  	fi
  
 -$(VAR_DB)/netgroup.db: /etc/netgroup
-+$(VAR_DB)/netgroup.db: @TERMUX_PREFIX@/etc/netgroup
++$(VAR_DB)/netgroup.db: /data/data/com.linux.term/files/linux/etc/netgroup
  	@printf %s "$(patsubst %.db,%,$(@F))... "
  	@$(AWK) 'BEGIN { ini=1 } \
  		 /^[ \t]*$$/ { next } \
@@ -373,7 +373,7 @@ index c0f496f9..5d89c5be 100644
  
  /* Name of the config file for RFC 3484 sorting (for now).  */
 -#define GAICONF_FNAME "/etc/gai.conf"
-+#define GAICONF_FNAME "@TERMUX_PREFIX@/etc/gai.conf"
++#define GAICONF_FNAME "/data/data/com.linux.term/files/linux/etc/gai.conf"
  
  
  /* Non-zero if we are supposed to reload the config file automatically
@@ -386,7 +386,7 @@ index 4db144b1..69f3498c 100644
  
  /* Name of the lock file.  */
 -#define PWD_LOCKFILE "/etc/.pwd.lock"
-+#define PWD_LOCKFILE "@TERMUX_PREFIX@/etc/.pwd.lock"
++#define PWD_LOCKFILE "/data/data/com.linux.term/files/linux/etc/.pwd.lock"
  
  /* How long to wait for getting the lock before returning with an
     error.  */
@@ -399,7 +399,7 @@ index 2d6becb1..ef6e4f75 100644
    if (ent->stream == NULL)
      {
 -      ent->stream = __nss_files_fopen ("/etc/group");
-+      ent->stream = __nss_files_fopen ("@TERMUX_PREFIX@/etc/group");
++      ent->stream = __nss_files_fopen ("/data/data/com.linux.term/files/linux/etc/group");
  
        if (ent->stream == NULL)
  	status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;
@@ -412,7 +412,7 @@ index e6cb0983..227e6d52 100644
      ent->blacklist.current = 0;
  
 -  ent->stream = __nss_files_fopen ("/etc/group");
-+  ent->stream = __nss_files_fopen ("@TERMUX_PREFIX@/etc/group");
++  ent->stream = __nss_files_fopen ("/data/data/com.linux.term/files/linux/etc/group");
  
    if (ent->stream == NULL)
      status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;
@@ -425,7 +425,7 @@ index 86e1c562..9b7fb904 100644
    if (ent->stream == NULL)
      {
 -      ent->stream = __nss_files_fopen ("/etc/passwd");
-+      ent->stream = __nss_files_fopen ("@TERMUX_PREFIX@/etc/passwd");
++      ent->stream = __nss_files_fopen ("/data/data/com.linux.term/files/linux/etc/passwd");
  
        if (ent->stream == NULL)
  	status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;
@@ -438,7 +438,7 @@ index 5617f94d..735a3737 100644
    if (ent->stream == NULL)
      {
 -      ent->stream = __nss_files_fopen ("/etc/shadow");
-+      ent->stream = __nss_files_fopen ("@TERMUX_PREFIX@/etc/shadow");
++      ent->stream = __nss_files_fopen ("/data/data/com.linux.term/files/linux/etc/shadow");
  
        if (ent->stream == NULL)
  	status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;
@@ -451,7 +451,7 @@ index 9babb2a5..324263c7 100644
  #define ENTNAME_r	CONCAT(ENTNAME,_r)
  
 -#define DATAFILE	"/etc/" DATABASE
-+#define DATAFILE	"@TERMUX_PREFIX@/etc/" DATABASE
++#define DATAFILE	"/data/data/com.linux.term/files/linux/etc/" DATABASE
  
  #ifdef NEED_H_ERRNO
  # include <netdb.h>
@@ -464,7 +464,7 @@ index 2b05cb2d..366dfec8 100644
    if (*stream == NULL)
      {
 -      *stream = __nss_files_fopen ("/etc/aliases");
-+      *stream = __nss_files_fopen ("@TERMUX_PREFIX@/etc/aliases");
++      *stream = __nss_files_fopen ("/data/data/com.linux.term/files/linux/etc/aliases");
  
        if (*stream == NULL)
  	status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;
@@ -473,7 +473,7 @@ index 2b05cb2d..366dfec8 100644
  _nss_files_setaliasent (void)
  {
 -  return __nss_files_data_setent (nss_file_aliasent, "/etc/aliases");
-+  return __nss_files_data_setent (nss_file_aliasent, "@TERMUX_PREFIX@/etc/aliases");
++  return __nss_files_data_setent (nss_file_aliasent, "/data/data/com.linux.term/files/linux/etc/aliases");
  }
  libc_hidden_def (_nss_files_setaliasent)
  
@@ -482,7 +482,7 @@ index 2b05cb2d..366dfec8 100644
    struct nss_files_per_file_data *data;
    enum nss_status status = __nss_files_data_open (&data, nss_file_aliasent,
 -						  "/etc/aliases", errnop, NULL);
-+						  "@TERMUX_PREFIX@/etc/aliases", errnop, NULL);
++						  "/data/data/com.linux.term/files/linux/etc/aliases", errnop, NULL);
    if (status != NSS_STATUS_SUCCESS)
      return status;
  
@@ -500,12 +500,12 @@ index 27c369c8..b034337f 100644
 -  register_file (cb, hstdb, "/etc/resolv.conf", 1);
 -  register_file (cb, servdb, "/etc/services", 0);
 -  register_file (cb, netgrdb, "/etc/netgroup", 0);
-+  register_file (cb, pwddb, "@TERMUX_PREFIX@/etc/passwd", 0);
-+  register_file (cb, grpdb, "@TERMUX_PREFIX@/etc/group", 0);
++  register_file (cb, pwddb, "/data/data/com.linux.term/files/linux/etc/passwd", 0);
++  register_file (cb, grpdb, "/data/data/com.linux.term/files/linux/etc/group", 0);
 +  register_file (cb, hstdb, "/system/etc/hosts", 0);
-+  register_file (cb, hstdb, "@TERMUX_PREFIX@/etc/resolv.conf", 1);
-+  register_file (cb, servdb, "@TERMUX_PREFIX@/etc/services", 0);
-+  register_file (cb, netgrdb, "@TERMUX_PREFIX@/etc/netgroup", 0);
++  register_file (cb, hstdb, "/data/data/com.linux.term/files/linux/etc/resolv.conf", 1);
++  register_file (cb, servdb, "/data/data/com.linux.term/files/linux/etc/services", 0);
++  register_file (cb, netgrdb, "/data/data/com.linux.term/files/linux/etc/netgroup", 0);
  }
  libc_hidden_def (_nss_files_init)
  
@@ -518,7 +518,7 @@ index 018b51e2..7850ae8d 100644
  			   int *errnop)
  {
 -  FILE *stream = __nss_files_fopen ("/etc/group");
-+  FILE *stream = __nss_files_fopen ("@TERMUX_PREFIX@/etc/group");
++  FILE *stream = __nss_files_fopen ("/data/data/com.linux.term/files/linux/etc/group");
    if (stream == NULL)
      {
        *errnop = errno;
@@ -531,7 +531,7 @@ index a1037713..1408701b 100644
  #include <nss_files.h>
  
 -#define DATAFILE	"/etc/netgroup"
-+#define DATAFILE	"@TERMUX_PREFIX@/etc/netgroup"
++#define DATAFILE	"/data/data/com.linux.term/files/linux/etc/netgroup"
  
  libc_hidden_proto (_nss_files_endnetgrent)
  
@@ -544,7 +544,7 @@ index e4ee4861..d1a53c27 100644
  #define HEADER_MAX          256
  
 -static char macrofile[] = "/tmp/annexc.XXXXXX";
-+static char macrofile[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/annexc.XXXXXX";
++static char macrofile[] = "/data/data/com.linux.term/files/linux/tmp/annexc.XXXXXX";
  
  /* <aio.h>.  */
  static const char *const aio_syms[] =
@@ -557,7 +557,7 @@ index a5a37116..a42dfde3 100644
  do_test (void)
  {
 -  char fname[] = "/tmp/bug-getopt1.XXXXXX";
-+  char fname[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/bug-getopt1.XXXXXX";
++  char fname[] = "/data/data/com.linux.term/files/linux/tmp/bug-getopt1.XXXXXX";
    int fd = mkstemp (fname);
    if (fd == -1)
      {
@@ -570,7 +570,7 @@ index 8f92f0c6..069a1ff5 100644
  do_test (void)
  {
 -  char fname[] = "/tmp/bug-getopt2.XXXXXX";
-+  char fname[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/bug-getopt2.XXXXXX";
++  char fname[] = "/data/data/com.linux.term/files/linux/tmp/bug-getopt2.XXXXXX";
    int fd = mkstemp (fname);
    if (fd == -1)
      {
@@ -583,7 +583,7 @@ index 45a8d3ec..32b15899 100644
  do_test (void)
  {
 -  char fname[] = "/tmp/bug-getopt3.XXXXXX";
-+  char fname[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/bug-getopt3.XXXXXX";
++  char fname[] = "/data/data/com.linux.term/files/linux/tmp/bug-getopt3.XXXXXX";
    int fd = mkstemp (fname);
    if (fd == -1)
      {
@@ -596,7 +596,7 @@ index c5e3c149..e54f2169 100644
  do_test (void)
  {
 -  char fname[] = "/tmp/bug-getopt4.XXXXXX";
-+  char fname[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/bug-getopt4.XXXXXX";
++  char fname[] = "/data/data/com.linux.term/files/linux/tmp/bug-getopt4.XXXXXX";
    int fd = mkstemp (fname);
    if (fd == -1)
      {
@@ -609,7 +609,7 @@ index 4f67d9b2..11645956 100644
  do_test (void)
  {
 -  char fname[] = "/tmp/bug-getopt5.XXXXXX";
-+  char fname[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/bug-getopt5.XXXXXX";
++  char fname[] = "/data/data/com.linux.term/files/linux/tmp/bug-getopt5.XXXXXX";
    int fd = mkstemp (fname);
    if (fd == -1)
      {
@@ -622,7 +622,7 @@ index 77dd760e..0ba08650 100644
  
  
 -static const char text[] = "#! /bin/sh";
-+static const char text[] = "#! @TERMUX_PREFIX@/bin/sh";
++static const char text[] = "#! /data/data/com.linux.term/files/linux/bin/sh";
  
  int
  main (void)
@@ -640,12 +640,12 @@ index 2b3cdfd4..77c49f7c 100644
 -#define	_PATH_NSSWITCH_CONF	"/etc/nsswitch.conf"
 -#define	_PATH_PROTOCOLS		"/etc/protocols"
 -#define	_PATH_SERVICES		"/etc/services"
-+#define	_PATH_HEQUIV		"@TERMUX_PREFIX@/etc/hosts.equiv"
-+#define	_PATH_HOSTS		"@TERMUX_PREFIX@/etc/hosts"
-+#define	_PATH_NETWORKS		"@TERMUX_PREFIX@/etc/networks"
-+#define	_PATH_NSSWITCH_CONF	"@TERMUX_PREFIX@/etc/nsswitch.conf"
-+#define	_PATH_PROTOCOLS		"@TERMUX_PREFIX@/etc/protocols"
-+#define	_PATH_SERVICES		"@TERMUX_PREFIX@/etc/services"
++#define	_PATH_HEQUIV		"/data/data/com.linux.term/files/linux/etc/hosts.equiv"
++#define	_PATH_HOSTS		"/data/data/com.linux.term/files/linux/etc/hosts"
++#define	_PATH_NETWORKS		"/data/data/com.linux.term/files/linux/etc/networks"
++#define	_PATH_NSSWITCH_CONF	"/data/data/com.linux.term/files/linux/etc/nsswitch.conf"
++#define	_PATH_PROTOCOLS		"/data/data/com.linux.term/files/linux/etc/protocols"
++#define	_PATH_SERVICES		"/data/data/com.linux.term/files/linux/etc/services"
  
  
  __BEGIN_DECLS
@@ -658,7 +658,7 @@ index 46bd26cf..8599ac6d 100644
  #endif
  
 -#define _PATH_HOSTCONF	"/etc/host.conf"
-+#define _PATH_HOSTCONF	"@TERMUX_PREFIX@/etc/host.conf"
++#define _PATH_HOSTCONF	"/data/data/com.linux.term/files/linux/etc/host.conf"
  
  /* Environment vars that all user to override default behavior:  */
  #define ENV_HOSTCONF	"RESOLV_HOST_CONF"
@@ -671,7 +671,7 @@ index b8a0f66a..b7974333 100644
  
  #ifndef _PATH_RESCONF
 -#define _PATH_RESCONF        "/etc/resolv.conf"
-+#define _PATH_RESCONF        "@TERMUX_PREFIX@/etc/resolv.conf"
++#define _PATH_RESCONF        "/data/data/com.linux.term/files/linux/etc/resolv.conf"
  #endif
  
  struct res_sym {
@@ -684,7 +684,7 @@ index c9c2ef51..053f7227 100644
  {
    int lose = 0;
 -  char filename[] = "/tmp/bug7.XXXXXX";
-+  char filename[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/bug7.XXXXXX";
++  char filename[] = "/data/data/com.linux.term/files/linux/tmp/bug7.XXXXXX";
    FILE *fp;
  
    int fd = mkstemp (filename);
@@ -694,8 +694,8 @@ index c9c2ef51..053f7227 100644
      FILE *file2;
 -    char filename1[] = "/tmp/bug7.XXXXXX";
 -    char filename2[] = "/tmp/bug7.XXXXXX";
-+    char filename1[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/bug7.XXXXXX";
-+    char filename2[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/bug7.XXXXXX";
++    char filename1[] = "/data/data/com.linux.term/files/linux/tmp/bug7.XXXXXX";
++    char filename2[] = "/data/data/com.linux.term/files/linux/tmp/bug7.XXXXXX";
      int ch;
  
      int fd1 = mkstemp (filename1);
@@ -708,7 +708,7 @@ index 59992a22..0c5bf1de 100644
    const char *tmpdir = getenv ("TMPDIR");
    if (tmpdir == NULL || tmpdir[0] == '\0')
 -    tmpdir = "/tmp";
-+    tmpdir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++    tmpdir = "/data/data/com.linux.term/files/linux/tmp";
  
    char fname[strlen (tmpdir) + sizeof "/tst-scanf14.XXXXXX"];
    sprintf (fname, "%s/tst-scanf14.XXXXXX", tmpdir);
@@ -721,7 +721,7 @@ index 419e59b0..1334dadf 100644
    const char *tmpdir = getenv ("TMPDIR");
    if (tmpdir == NULL || tmpdir[0] == '\0')
 -    tmpdir = "/tmp";
-+    tmpdir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++    tmpdir = "/data/data/com.linux.term/files/linux/tmp";
  
    char fname[strlen (tmpdir) + sizeof "/tst-scanf15.XXXXXX"];
    sprintf (fname, "%s/tst-scanf15.XXXXXX", tmpdir);
@@ -734,7 +734,7 @@ index ce1da22b..7a56f0a4 100644
    const char *tmpdir = getenv ("TMPDIR");
    if (tmpdir == NULL || tmpdir[0] == '\0')
 -    tmpdir = "/tmp";
-+    tmpdir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++    tmpdir = "/data/data/com.linux.term/files/linux/tmp";
  
    char fname[strlen (tmpdir) + sizeof "/tst-scanf16.XXXXXX"];
    sprintf (fname, "%s/tst-scanf16.XXXXXX", tmpdir);
@@ -747,7 +747,7 @@ index fedbf753..03dbea56 100644
    const char *tmpdir = getenv ("TMPDIR");
    if (tmpdir == NULL || tmpdir[0] == '\0')
 -    tmpdir = "/tmp";
-+    tmpdir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++    tmpdir = "/data/data/com.linux.term/files/linux/tmp";
  
    char fname[strlen (tmpdir) + sizeof "/tst-scanf17.XXXXXX"];
    sprintf (fname, "%s/tst-scanf17.XXXXXX", tmpdir);
@@ -760,7 +760,7 @@ index dff8333b..741e21dc 100644
    const char *tmpdir = getenv ("TMPDIR");
    if (tmpdir == NULL || tmpdir[0] == '\0')
 -    tmpdir = "/tmp";
-+    tmpdir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++    tmpdir = "/data/data/com.linux.term/files/linux/tmp";
  
    char fname[strlen (tmpdir) + sizeof "/tst-scanf14.XXXXXX"];
    sprintf (fname, "%s/tst-scanf14.XXXXXX", tmpdir);
@@ -773,7 +773,7 @@ index 36cff6ea..4f451bc9 100644
    const char *tmpdir = getenv ("TMPDIR");
    if (tmpdir == NULL || tmpdir[0] == '\0')
 -    tmpdir = "/tmp";
-+    tmpdir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++    tmpdir = "/data/data/com.linux.term/files/linux/tmp";
  
    char fname[strlen (tmpdir) + sizeof "/tst-scanf16.XXXXXX"];
    sprintf (fname, "%s/tst-scanf16.XXXXXX", tmpdir);
@@ -786,7 +786,7 @@ index 0846562a..f6a18f43 100644
  #  define P_tmpdir _P_tmpdir
  # else
 -#  define P_tmpdir "/tmp"
-+#  define P_tmpdir "@TERMUX_PREFIX_CLASSICAL@/tmp"
++#  define P_tmpdir "/data/data/com.linux.term/files/linux/tmp"
  # endif
  #endif
  
@@ -796,8 +796,8 @@ index 0846562a..f6a18f43 100644
          dir = P_tmpdir;
 -      else if (strcmp (P_tmpdir, "/tmp") != 0 && direxists ("/tmp"))
 -        dir = "/tmp";
-+      else if (strcmp (P_tmpdir, "@TERMUX_PREFIX_CLASSICAL@/tmp") != 0 && direxists ("@TERMUX_PREFIX_CLASSICAL@/tmp"))
-+        dir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++      else if (strcmp (P_tmpdir, "/data/data/com.linux.term/files/linux/tmp") != 0 && direxists ("/data/data/com.linux.term/files/linux/tmp"))
++        dir = "/data/data/com.linux.term/files/linux/tmp";
        else
          {
            __set_errno (ENOENT);
@@ -810,7 +810,7 @@ index 33d7fcfa..4faf4aec 100644
    if (argc == 2 && !strcmp (argv[1], "-opipe"))
      {
 -      out = popen ("/bin/cat", "w");
-+      out = popen ("@TERMUX_PREFIX@/bin/cat", "w");
++      out = popen ("/data/data/com.linux.term/files/linux/bin/cat", "w");
        if (out == NULL)
  	{
  	  perror ("popen: /bin/cat");
@@ -819,7 +819,7 @@ index 33d7fcfa..4faf4aec 100644
    else if (argc == 3 && !strcmp (argv[1], "-ipipe"))
      {
 -      sprintf (buf, "/bin/cat %s", argv[2]);
-+      sprintf (buf, "@TERMUX_PREFIX@/bin/cat %s", argv[2]);
++      sprintf (buf, "/data/data/com.linux.term/files/linux/bin/cat %s", argv[2]);
        in = popen (buf, "r");
        if (in == NULL)
  	{
@@ -832,7 +832,7 @@ index 06f74aff..034f510c 100644
    unsetenv ("LD_LIBRARY_PATH");
  
 -  if (!(input = popen("/bin/cat", "r")))
-+  if (!(input = popen("@TERMUX_PREFIX@/bin/cat", "r")))
++  if (!(input = popen("/data/data/com.linux.term/files/linux/bin/cat", "r")))
      fprintf(stderr, "cannot run \n");
  
    ReadFile(&buffer, input);
@@ -845,7 +845,7 @@ index 5ed5d0e5..f6a01d30 100644
  #define HEADER_MAX          256
  
 -static char macrofile[] = "/tmp/isomac.XXXXXX";
-+static char macrofile[] = "@TERMUX_PREFIX_CLASSICAL@/tmp/isomac.XXXXXX";
++static char macrofile[] = "/data/data/com.linux.term/files/linux/tmp/isomac.XXXXXX";
  
  /* ISO C header names including Amendment 1 (without ".h" suffix).  */
  static char *header[] =
@@ -858,7 +858,7 @@ index 081e196c..0aa3e6fc 100644
    const char *tmpdir = getenv ("TMPDIR");
    if (tmpdir == NULL || tmpdir[0] == '\0')
 -    tmpdir = "/tmp";
-+    tmpdir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++    tmpdir = "/data/data/com.linux.term/files/linux/tmp";
  
    char *prefix = xasprintf ("%s/glibc-tst-fuse.", tmpdir);
    support_fuse_mountpoints = support_fuse_mkdir (prefix);
@@ -871,7 +871,7 @@ index 19fe119d..5e6f52e4 100644
        test_dir = getenv ("TMPDIR");
        if (test_dir == NULL || test_dir[0] == '\0')
 -        test_dir = "/tmp";
-+        test_dir = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++        test_dir = "/data/data/com.linux.term/files/linux/tmp";
      }
    if (support_set_test_dir != NULL)
      support_set_test_dir (test_dir);
@@ -909,7 +909,7 @@ index 5913bf40..3d74d35b 100644
 +#else
 +# define _LDCONFIG_NAME "ldconfig"
 +#endif
-+#define _PATH_LDCONFIG_AUX_CACHE "@TERMUX_PREFIX@/var/cache/" _LDCONFIG_NAME "/aux-cache"
++#define _PATH_LDCONFIG_AUX_CACHE "/data/data/com.linux.term/files/linux/var/cache/" _LDCONFIG_NAME "/aux-cache"
  
  /* Declared in cache.c.  */
  extern void print_cache (const char *cache_name);
@@ -922,30 +922,30 @@ index 893b4c22..6c38ca05 100644
  
  /* Default search path. */
 -#define	_PATH_DEFPATH	"/usr/bin:/bin"
-+#define	_PATH_DEFPATH	"@TERMUX_PREFIX@/bin:@TERMUX_PREFIX_CLASSICAL@/bin:/system/bin"
++#define	_PATH_DEFPATH	"/data/data/com.linux.term/files/linux/bin:/data/data/com.linux.term/files/linux/bin:/system/bin"
  /* All standard utilities path. */
  #define	_PATH_STDPATH \
 -	"/usr/bin:/bin:/usr/sbin:/sbin"
-+	"@TERMUX_PREFIX@/bin:@TERMUX_PREFIX_CLASSICAL@/bin:/system/bin"
++	"/data/data/com.linux.term/files/linux/bin:/data/data/com.linux.term/files/linux/bin:/system/bin"
  
 -#define	_PATH_BSHELL	"/bin/sh"
-+#define	_PATH_BSHELL	"@TERMUX_PREFIX@/bin/sh"
++#define	_PATH_BSHELL	"/data/data/com.linux.term/files/linux/bin/sh"
  #define	_PATH_CONSOLE	"/dev/console"
 -#define	_PATH_CSHELL	"/bin/csh"
 -#define	_PATH_DEVDB	"/var/run/dev.db"
-+#define	_PATH_CSHELL	"@TERMUX_PREFIX@/bin/csh"
-+#define	_PATH_DEVDB	"@TERMUX_PREFIX@/var/run/dev.db"
++#define	_PATH_CSHELL	"/data/data/com.linux.term/files/linux/bin/csh"
++#define	_PATH_DEVDB	"/data/data/com.linux.term/files/linux/var/run/dev.db"
  #define	_PATH_DEVNULL	"/dev/null"
  #define	_PATH_DRUM	"/dev/drum"
 -#define	_PATH_GSHADOW	"/etc/gshadow"
-+#define	_PATH_GSHADOW	"@TERMUX_PREFIX@/etc/gshadow"
++#define	_PATH_GSHADOW	"/data/data/com.linux.term/files/linux/etc/gshadow"
  #define	_PATH_KMEM	"/dev/kmem"
 -#define	_PATH_LASTLOG	"/var/log/lastlog"
 -#define	_PATH_MAILDIR	"/var/mail"
 -#define	_PATH_MAN	"/usr/share/man"
-+#define	_PATH_LASTLOG	"@TERMUX_PREFIX@/var/log/lastlog"
-+#define	_PATH_MAILDIR	"@TERMUX_PREFIX@/var/mail"
-+#define	_PATH_MAN	"@TERMUX_PREFIX@/share/man"
++#define	_PATH_LASTLOG	"/data/data/com.linux.term/files/linux/var/log/lastlog"
++#define	_PATH_MAILDIR	"/data/data/com.linux.term/files/linux/var/mail"
++#define	_PATH_MAN	"/data/data/com.linux.term/files/linux/share/man"
  #define	_PATH_MEM	"/dev/mem"
 -#define	_PATH_MNTTAB	"/etc/fstab"
 -#define	_PATH_MOUNTED	"/var/run/mtab"
@@ -955,24 +955,24 @@ index 893b4c22..6c38ca05 100644
 -#define	_PATH_SENDMAIL	"/usr/sbin/sendmail"
 -#define	_PATH_SHADOW	"/etc/shadow"
 -#define	_PATH_SHELLS	"/etc/shells"
-+#define	_PATH_MNTTAB	"@TERMUX_PREFIX@/etc/fstab"
-+#define	_PATH_MOUNTED	"@TERMUX_PREFIX@/var/run/mtab"
-+#define	_PATH_NOLOGIN	"@TERMUX_PREFIX@/etc/nologin"
-+#define	_PATH_PRESERVE	"@TERMUX_PREFIX@/var/lib"
-+#define	_PATH_RWHODIR	"@TERMUX_PREFIX@/var/spool/rwho"
-+#define	_PATH_SENDMAIL	"@TERMUX_PREFIX@/bin/sendmail"
-+#define	_PATH_SHADOW	"@TERMUX_PREFIX@/etc/shadow"
-+#define	_PATH_SHELLS	"@TERMUX_PREFIX@/etc/shells"
++#define	_PATH_MNTTAB	"/data/data/com.linux.term/files/linux/etc/fstab"
++#define	_PATH_MOUNTED	"/data/data/com.linux.term/files/linux/var/run/mtab"
++#define	_PATH_NOLOGIN	"/data/data/com.linux.term/files/linux/etc/nologin"
++#define	_PATH_PRESERVE	"/data/data/com.linux.term/files/linux/var/lib"
++#define	_PATH_RWHODIR	"/data/data/com.linux.term/files/linux/var/spool/rwho"
++#define	_PATH_SENDMAIL	"/data/data/com.linux.term/files/linux/bin/sendmail"
++#define	_PATH_SHADOW	"/data/data/com.linux.term/files/linux/etc/shadow"
++#define	_PATH_SHELLS	"/data/data/com.linux.term/files/linux/etc/shells"
  #define	_PATH_TTY	"/dev/tty"
  #define	_PATH_UNIX	"/vmunix"
 -#define	_PATH_UTMP	"/var/run/utmp"
 -#define	_PATH_UTMP_DB	"/var/run/utmp.db"
 -#define	_PATH_VI	"/usr/bin/vi"
 -#define	_PATH_WTMP	"/var/log/wtmp"
-+#define	_PATH_UTMP	"@TERMUX_PREFIX@/var/run/utmp"
-+#define	_PATH_UTMP_DB	"@TERMUX_PREFIX@/var/run/utmp.db"
-+#define	_PATH_VI	"@TERMUX_PREFIX@/bin/vi"
-+#define	_PATH_WTMP	"@TERMUX_PREFIX@/var/log/wtmp"
++#define	_PATH_UTMP	"/data/data/com.linux.term/files/linux/var/run/utmp"
++#define	_PATH_UTMP_DB	"/data/data/com.linux.term/files/linux/var/run/utmp.db"
++#define	_PATH_VI	"/data/data/com.linux.term/files/linux/bin/vi"
++#define	_PATH_WTMP	"/data/data/com.linux.term/files/linux/var/log/wtmp"
  
  /* Provide trailing slash, since mostly used for building pathnames. */
  #define	_PATH_DEV	"/dev/"
@@ -980,10 +980,10 @@ index 893b4c22..6c38ca05 100644
 -#define	_PATH_VARDB	"/var/db/"
 -#define	_PATH_VARRUN	"/var/run/"
 -#define	_PATH_VARTMP	"/var/tmp/"
-+#define	_PATH_TMP	"@TERMUX_PREFIX_CLASSICAL@/tmp/"
-+#define	_PATH_VARDB	"@TERMUX_PREFIX@/var/db/"
-+#define	_PATH_VARRUN	"@TERMUX_PREFIX@/var/run/"
-+#define	_PATH_VARTMP	"@TERMUX_PREFIX@/var/tmp/"
++#define	_PATH_TMP	"/data/data/com.linux.term/files/linux/tmp/"
++#define	_PATH_VARDB	"/data/data/com.linux.term/files/linux/var/db/"
++#define	_PATH_VARRUN	"/data/data/com.linux.term/files/linux/var/run/"
++#define	_PATH_VARTMP	"/data/data/com.linux.term/files/linux/var/tmp/"
  
  #endif /* !_PATHS_H_ */
 diff --git a/sysdeps/posix/system.c b/sysdeps/posix/system.c
@@ -995,7 +995,7 @@ index d01ee518..96c2616a 100644
  #include <internal-signals.h>
  
 -#define	SHELL_PATH	"/bin/sh"	/* Path of the shell.  */
-+#define	SHELL_PATH	"@TERMUX_PREFIX@/bin/sh"	/* Path of the shell.  */
++#define	SHELL_PATH	"/data/data/com.linux.term/files/linux/bin/sh"	/* Path of the shell.  */
  #define	SHELL_NAME	"sh"		/* Name to give it.  */
  
  
@@ -1005,7 +1005,7 @@ index 15859c3b..3bc390f5 100644
 +++ b/sysdeps/unix/confstr.h
 @@ -1 +1 @@
 -#define	CS_PATH	"/bin:/usr/bin"
-+#define	CS_PATH	"@TERMUX_PREFIX@/bin:@TERMUX_PREFIX_CLASSICAL@/bin:/system/bin"
++#define	CS_PATH	"/data/data/com.linux.term/files/linux/bin:/data/data/com.linux.term/files/linux/bin:/system/bin"
 diff --git a/sysdeps/unix/sysv/linux/gentempfd.c b/sysdeps/unix/sysv/linux/gentempfd.c
 index b31ec84f..a759edc3 100644
 --- a/sysdeps/unix/sysv/linux/gentempfd.c
@@ -1016,8 +1016,8 @@ index b31ec84f..a759edc3 100644
  		   S_IRUSR | S_IWUSR);
 -  if (fd < 0 && errno == ENOENT && strcmp (P_tmpdir, "/tmp") != 0)
 -    fd = __open ("/tmp", O_RDWR | O_TMPFILE | O_EXCL | flags,
-+  if (fd < 0 && errno == ENOENT && strcmp (P_tmpdir, "@TERMUX_PREFIX_CLASSICAL@/tmp") != 0)
-+    fd = __open ("@TERMUX_PREFIX_CLASSICAL@/tmp", O_RDWR | O_TMPFILE | O_EXCL | flags,
++  if (fd < 0 && errno == ENOENT && strcmp (P_tmpdir, "/data/data/com.linux.term/files/linux/tmp") != 0)
++    fd = __open ("/data/data/com.linux.term/files/linux/tmp", O_RDWR | O_TMPFILE | O_EXCL | flags,
  		 S_IRUSR | S_IWUSR);
  
    return fd;
@@ -1030,31 +1030,31 @@ index 1342ab3a..357120b4 100644
  
  /* Default search path. */
 -#define	_PATH_DEFPATH	"/usr/bin:/bin"
-+#define	_PATH_DEFPATH	"@TERMUX_PREFIX@/bin:@TERMUX_PREFIX_CLASSICAL@/bin:/system/bin"
++#define	_PATH_DEFPATH	"/data/data/com.linux.term/files/linux/bin:/data/data/com.linux.term/files/linux/bin:/system/bin"
  /* All standard utilities path. */
  #define	_PATH_STDPATH \
 -	"/usr/bin:/bin:/usr/sbin:/sbin"
-+	"@TERMUX_PREFIX@/bin:@TERMUX_PREFIX_CLASSICAL@/bin:/system/bin"
++	"/data/data/com.linux.term/files/linux/bin:/data/data/com.linux.term/files/linux/bin:/system/bin"
  
 -#define	_PATH_BSHELL	"/bin/sh"
-+#define	_PATH_BSHELL	"@TERMUX_PREFIX@/bin/sh"
++#define	_PATH_BSHELL	"/data/data/com.linux.term/files/linux/bin/sh"
  #define	_PATH_CONSOLE	"/dev/console"
 -#define	_PATH_CSHELL	"/bin/csh"
 -#define	_PATH_DEVDB	"/var/run/dev.db"
-+#define	_PATH_CSHELL	"@TERMUX_PREFIX@/bin/csh"
-+#define	_PATH_DEVDB	"@TERMUX_PREFIX@/var/run/dev.db"
++#define	_PATH_CSHELL	"/data/data/com.linux.term/files/linux/bin/csh"
++#define	_PATH_DEVDB	"/data/data/com.linux.term/files/linux/var/run/dev.db"
  #define	_PATH_DEVNULL	"/dev/null"
  #define	_PATH_DRUM	"/dev/drum"
 -#define	_PATH_GSHADOW	"/etc/gshadow"
-+#define	_PATH_GSHADOW	"@TERMUX_PREFIX@/etc/gshadow"
++#define	_PATH_GSHADOW	"/data/data/com.linux.term/files/linux/etc/gshadow"
  #define	_PATH_KLOG	"/proc/kmsg"
  #define	_PATH_KMEM	"/dev/kmem"
 -#define	_PATH_LASTLOG	"/var/log/lastlog"
 -#define	_PATH_MAILDIR	"/var/mail"
 -#define	_PATH_MAN	"/usr/share/man"
-+#define	_PATH_LASTLOG	"@TERMUX_PREFIX@/var/log/lastlog"
-+#define	_PATH_MAILDIR	"@TERMUX_PREFIX@/var/mail"
-+#define	_PATH_MAN	"@TERMUX_PREFIX@/share/man"
++#define	_PATH_LASTLOG	"/data/data/com.linux.term/files/linux/var/log/lastlog"
++#define	_PATH_MAILDIR	"/data/data/com.linux.term/files/linux/var/mail"
++#define	_PATH_MAN	"/data/data/com.linux.term/files/linux/share/man"
  #define	_PATH_MEM	"/dev/mem"
 -#define	_PATH_MNTTAB	"/etc/fstab"
 -#define	_PATH_MOUNTED	"/etc/mtab"
@@ -1064,22 +1064,22 @@ index 1342ab3a..357120b4 100644
 -#define	_PATH_SENDMAIL	"/usr/sbin/sendmail"
 -#define	_PATH_SHADOW	"/etc/shadow"
 -#define	_PATH_SHELLS	"/etc/shells"
-+#define	_PATH_MNTTAB	"@TERMUX_PREFIX@/etc/fstab"
-+#define	_PATH_MOUNTED	"@TERMUX_PREFIX@/etc/mtab"
-+#define	_PATH_NOLOGIN	"@TERMUX_PREFIX@/etc/nologin"
-+#define	_PATH_PRESERVE	"@TERMUX_PREFIX@/var/lib"
-+#define	_PATH_RWHODIR	"@TERMUX_PREFIX@/var/spool/rwho"
-+#define	_PATH_SENDMAIL	"@TERMUX_PREFIX@/bin/sendmail"
-+#define	_PATH_SHADOW	"@TERMUX_PREFIX@/etc/shadow"
-+#define	_PATH_SHELLS	"@TERMUX_PREFIX@/etc/shells"
++#define	_PATH_MNTTAB	"/data/data/com.linux.term/files/linux/etc/fstab"
++#define	_PATH_MOUNTED	"/data/data/com.linux.term/files/linux/etc/mtab"
++#define	_PATH_NOLOGIN	"/data/data/com.linux.term/files/linux/etc/nologin"
++#define	_PATH_PRESERVE	"/data/data/com.linux.term/files/linux/var/lib"
++#define	_PATH_RWHODIR	"/data/data/com.linux.term/files/linux/var/spool/rwho"
++#define	_PATH_SENDMAIL	"/data/data/com.linux.term/files/linux/bin/sendmail"
++#define	_PATH_SHADOW	"/data/data/com.linux.term/files/linux/etc/shadow"
++#define	_PATH_SHELLS	"/data/data/com.linux.term/files/linux/etc/shells"
  #define	_PATH_TTY	"/dev/tty"
  #define	_PATH_UNIX	"/boot/vmlinux"
 -#define	_PATH_UTMP	"/var/run/utmp"
 -#define	_PATH_VI	"/usr/bin/vi"
 -#define	_PATH_WTMP	"/var/log/wtmp"
-+#define	_PATH_UTMP	"@TERMUX_PREFIX@/var/run/utmp"
-+#define	_PATH_VI	"@TERMUX_PREFIX@/bin/vi"
-+#define	_PATH_WTMP	"@TERMUX_PREFIX@/var/log/wtmp"
++#define	_PATH_UTMP	"/data/data/com.linux.term/files/linux/var/run/utmp"
++#define	_PATH_VI	"/data/data/com.linux.term/files/linux/bin/vi"
++#define	_PATH_WTMP	"/data/data/com.linux.term/files/linux/var/log/wtmp"
  
  /* Provide trailing slash, since mostly used for building pathnames. */
  #define	_PATH_DEV	"/dev/"
@@ -1087,10 +1087,10 @@ index 1342ab3a..357120b4 100644
 -#define	_PATH_VARDB	"/var/db/"
 -#define	_PATH_VARRUN	"/var/run/"
 -#define	_PATH_VARTMP	"/var/tmp/"
-+#define	_PATH_TMP	"@TERMUX_PREFIX_CLASSICAL@/tmp/"
-+#define	_PATH_VARDB	"@TERMUX_PREFIX@/var/db/"
-+#define	_PATH_VARRUN	"@TERMUX_PREFIX@/var/run/"
-+#define	_PATH_VARTMP	"@TERMUX_PREFIX@/var/tmp/"
++#define	_PATH_TMP	"/data/data/com.linux.term/files/linux/tmp/"
++#define	_PATH_VARDB	"/data/data/com.linux.term/files/linux/var/db/"
++#define	_PATH_VARRUN	"/data/data/com.linux.term/files/linux/var/run/"
++#define	_PATH_VARTMP	"/data/data/com.linux.term/files/linux/var/tmp/"
  
  #endif /* !_PATHS_H_ */
 diff --git a/sysdeps/unix/sysv/linux/riscv/dl-cache.h b/sysdeps/unix/sysv/linux/riscv/dl-cache.h
@@ -1102,7 +1102,7 @@ index 5972a3fa..f18850ea 100644
  	NULL,								\
        };								\
 -      const size_t lib_len = sizeof ("/lib") - 1;			\
-+      const size_t lib_len = sizeof ("@TERMUX_PREFIX@/lib") - 1;			\
++      const size_t lib_len = sizeof ("/data/data/com.linux.term/files/linux/lib") - 1;			\
        size_t len = strlen (dir);					\
        char path[len + 10];						\
        const char **ptr;							\
