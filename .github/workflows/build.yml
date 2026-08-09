@@ -176,7 +176,7 @@ jobs:
 
     - name: Build packages
       env:
-          TERMUX__PREFIX_GLIBC:/data/data/com.linux.term/files/linux
+          TERMUX__PREFIX_GLIBC: /data/data/com.linux.term/files/linux
           TERMUX_PREFIX: /data/data/com.linux.term/files/linux 
       run: |
         declare -a packages
