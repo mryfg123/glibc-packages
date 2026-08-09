@@ -175,6 +175,8 @@ jobs:
         fi
 
     - name: Build packages
+      env:
+          TERMUX_PREFIX: /data/data/com.linux.term/files/linux 
       run: |
         declare -a packages
         for repo_path in $(jq --raw-output 'del(.pkg_format) | keys | .[]' repo.json); do
