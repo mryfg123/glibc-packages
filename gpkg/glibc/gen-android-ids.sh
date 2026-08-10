@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 APP_BASE_DIR="$1"
-APP_BASE_DIR="${APP_BASE_DIR:=/data/data/com.linux.term/files/linux}"
+APP_BASE_DIR="${APP_BASE_DIR:=/data/data/com.termux/files}"
 TOTAL_FILE="$2"
 TOTAL_FILE="${TOTAL_FILE:=android_ids.h}"
 READ_FILE="$3"
