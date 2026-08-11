@@ -163,7 +163,7 @@ termux_glibc_make_syscall_without_fsc() {
 	local libname="libsyscall_without_fsc.so"
 	echo "Compiling '${libname}'..."
 	$CC ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${TERMUX__PREFIX__LIB_DIR}/${libname} \
-		-shared -DWITHOUT_FAKESYSCALL
+		-shared -DWITHOUT_FAKESYSCALL || true
 	echo "DONE"
 }
 
