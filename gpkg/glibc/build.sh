@@ -131,9 +131,9 @@ termux_step_configure() {
 	fi
 	${TERMUX_PKG_SRCDIR}/configure \
 		--prefix=$TERMUX_PREFIX \
-		--libdir=/data/data/com.linux.term/files/linux/lib \
-		--libexecdir=/data/data/com.linux.term/files/linux/libexec \
-		--includedir=/data/data/com.linux.term/files/linux/include \
+		--libdir=$TERMUX__PREFIX__LIB_DIR \
+		--libexecdir=$TERMUX__PREFIX__LIB_DIR \
+		--includedir=$TERMUX__PREFIX__INCLUDE_DIR \
 		--host=$TERMUX_HOST_PLATFORM \
 		--build=$TERMUX_HOST_PLATFORM \
 		--target=$TERMUX_HOST_PLATFORM \
