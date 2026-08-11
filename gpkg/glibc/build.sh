@@ -169,7 +169,7 @@ termux_step_make_install() {
 	rm -fr ${TERMUX__PREFIX__INCLUDE_DIR}/gnu
 
 	if [ "$TERMUX_ON_DEVICE_BUILD" = "true" ]; then
-		# If there have been no glibc updates on the device for a long time,
+		# If there have been no glibc updates on the device for a long time
 		# then when installing glibc components in the usual way (`make install`),
 		# the glibc environment may break. Therefore, you need to install the libraries first,
 		# and then everything else.
@@ -179,7 +179,8 @@ termux_step_make_install() {
 		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/libc.so.6
 		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${TERMUX__PREFIX__LIB_DIR}
 	fi
-	make install DESTDIR=$TERMUX_PREFIX
+	echo $TERMUX_PKG_MASSAGEDIR
+	make install DESTDIR=$TERMUX_PKG_MASSAGEDIR
 
 	rm -f ${TERMUX_PREFIX}/etc/ld.so.cache
 	rm -f ${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
