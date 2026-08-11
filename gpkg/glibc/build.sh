@@ -11,7 +11,6 @@ TERMUX_PKG_RECOMMENDS="glibc-runner"
 TERMUX_PKG_NO_STATICSPLIT=true
 TERMUX_PKG_CONFFILES="glibc/etc/gai.conf, glibc/etc/locale.gen"
 
-
 termux_step_pre_configure() {
 	if [ "$TERMUX_PACKAGE_LIBRARY" != "glibc" ]; then
 		termux_error_exit "Compilation is only possible based on glibc"
@@ -116,9 +115,12 @@ termux_step_configure() {
 		"x86_64") _configure_flags+=(--enable-cet);;
 	esac
 
+	# 新增：禁用 ldconfig 和 localedef（避免 Android 环境下的断言错误）
+	_configure_flags+=(--disable-ldconfig --disable-localedef)
+
 	local _pkgversion="GNU libc for Android"
 	if [ -n "${TERMUX_APP_PACKAGE-}" ]; then
-		_pkgversion+="//data/data/com.linux.term/"
+		_pkgversion+="/${TERMUX_APP_PACKAGE}"
 	fi
 
 	CFLAGS="${CFLAGS/-Wp,-D_FORTIFY_SOURCE=2 / }"
@@ -155,84 +157,85 @@ termux_step_make() {
 		make info
 	fi
 }
-# 辅助函数：编译 libsyscall_without_fsc.so（也修改为安装到 DESTDIR）
+
+# 辅助函数：编译 libsyscall_without_fsc.so（修改为安装到 DESTDIR）
 termux_glibc_make_syscall_without_fsc() {
-    local libname="libsyscall_without_fsc.so"
-    echo "Compiling '${libname}'..."
-    ${CC} ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/${libname} \
-        -shared -DWITHOUT_FAKESYSCALL
-    echo "DONE"
+	local libname="libsyscall_without_fsc.so"
+	echo "Compiling '${libname}'..."
+	${CC} ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/${libname} \
+		-shared -DWITHOUT_FAKESYSCALL
+	echo "DONE"
 }
 
 termux_step_make_install() {
-    # 关键：设置 DESTDIR 指向打包目录
-    export DESTDIR="${TERMUX_PKG_MASSAGEDIR}"
-    
-    # 确保打包目录的顶级目录存在
-    mkdir -p ${DESTDIR}${TERMUX_PREFIX}
-    
-    # 删除目标目录中的旧 gnu 头文件（在 DESTDIR 内操作）
-    rm -fr ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/gnu
+	# 关键：设置 DESTDIR 指向打包目录
+	export DESTDIR="${TERMUX_PKG_MASSAGEDIR}"
 
-    # 设备上构建的特殊处理（也使用 DESTDIR）
-    if [ "$TERMUX_ON_DEVICE_BUILD" = "true" ]; then
-        # 如果设备上构建，先安装库文件到 DESTDIR
-        local glibc_dir="${TERMUX_PKG_TMPDIR}/glibc/"
-        mkdir -p ${glibc_dir}
-        make DESTDIR=${glibc_dir} elf/ldso_install install-lib
-        cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/libc.so.6
-        # 拷贝到 DESTDIR
-        cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/
-    fi
-    
-    # 主要安装：make install 会安装到 DESTDIR
-    make install
+	# 确保打包目录的顶级目录存在
+	mkdir -p ${DESTDIR}${TERMUX_PREFIX}
 
-    # 删除安装后生成的不必要文件（在 DESTDIR 内）
-    rm -f ${DESTDIR}${TERMUX_PREFIX}/etc/ld.so.cache
-    rm -f ${DESTDIR}${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
+	# 删除目标目录中的旧 gnu 头文件（在 DESTDIR 内操作）
+	rm -fr ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/gnu
 
-    # 安装 nscd 配置文件
-    install -dm755 ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d
-    install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf ${DESTDIR}${TERMUX_PREFIX}/etc/nscd.conf
-    install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d/nscd.conf
-    install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf ${DESTDIR}${TERMUX_PREFIX}/etc/gai.conf
-    
-    # 安装 locale-gen 脚本并替换其中的占位符
-    install -m755 ${TERMUX_PKG_BUILDER_DIR}/locale-gen ${DESTDIR}${TERMUX_PREFIX}/bin
-    sed -i "s|@TERMUX_PREFIX@|${TERMUX_PREFIX}|g; s|@TERMUX_PREFIX_CLASSICAL@|${TERMUX_PREFIX_CLASSICAL}|g" \
-        ${DESTDIR}${TERMUX_PREFIX}/bin/locale-gen
+	# 设备上构建的特殊处理（也使用 DESTDIR）
+	if [ "$TERMUX_ON_DEVICE_BUILD" = "true" ]; then
+		# 如果设备上构建，先安装库文件到 DESTDIR
+		local glibc_dir="${TERMUX_PKG_TMPDIR}/glibc/"
+		mkdir -p ${glibc_dir}
+		make DESTDIR=${glibc_dir} elf/ldso_install install-lib
+		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/libc.so.6
+		# 拷贝到 DESTDIR
+		cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/
+	fi
 
-    # 安装 locale.gen
-    install -m644 ${TERMUX_PKG_BUILDER_DIR}/locale.gen.txt ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
-    sed -e '1,3d' -e 's|/| |g' -e 's|\\| |g' -e 's|^|#|g' \
-        ${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED >> ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
+	# 主要安装：make install 会安装到 DESTDIR
+	make install
 
-    # 安装 SUPPORTED 文件
-    sed -e '1,3d' -e 's|/| |g' -e 's| \\||g' \
-        ${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > ${DESTDIR}${TERMUX_PREFIX}/share/i18n/SUPPORTED
+	# 删除安装后生成的不必要文件（在 DESTDIR 内）
+	rm -f ${DESTDIR}${TERMUX_PREFIX}/etc/ld.so.cache
+	rm -f ${DESTDIR}${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
 
-    # 安装 locale 数据（make 会尊重 DESTDIR）
-    install -dm755 ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/locale
-    make -C ${TERMUX_PKG_SRCDIR}/localedata objdir=${TERMUX_PKG_BUILDDIR} \
-        SUPPORTED-LOCALES="C.UTF-8/UTF-8 en_US.UTF-8/UTF-8" install-locale-files
+	# 安装 nscd 配置文件
+	install -dm755 ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf ${DESTDIR}${TERMUX_PREFIX}/etc/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf ${DESTDIR}${TERMUX_PREFIX}/etc/gai.conf
 
-    # 删除 locale.gen 中的 C.UTF-8 行（在 DESTDIR 内操作）
-    sed -i '/#C\.UTF-8 /d' ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
+	# 安装 locale-gen 脚本并替换其中的占位符
+	install -m755 ${TERMUX_PKG_BUILDER_DIR}/locale-gen ${DESTDIR}${TERMUX_PREFIX}/bin
+	sed -i "s|@TERMUX_PREFIX@|${TERMUX_PREFIX}|g; s|@TERMUX_PREFIX_CLASSICAL@|${TERMUX_PREFIX_CLASSICAL}|g" \
+		${DESTDIR}${TERMUX_PREFIX}/bin/locale-gen
 
-    # 安装 systemtap 头文件
-    install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt.h ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt.h
-    install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt-config.h ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt-config.h
+	# 安装 locale.gen
+	install -m644 ${TERMUX_PKG_BUILDER_DIR}/locale.gen.txt ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
+	sed -e '1,3d' -e 's|/| |g' -e 's|\\| |g' -e 's|^|#|g' \
+		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED >> ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
 
-    # 创建 ld.so 软链接（在 DESTDIR 内）
-    ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}${TERMUX_PREFIX}/bin/ld.so
-    ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/ld.so
+	# 安装 SUPPORTED 文件
+	sed -e '1,3d' -e 's|/| |g' -e 's| \\||g' \
+		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > ${DESTDIR}${TERMUX_PREFIX}/share/i18n/SUPPORTED
 
-    # 编译并安装 libsyscall_without_fsc.so（已修改为安装到 DESTDIR）
-    termux_glibc_make_syscall_without_fsc
+	# 安装 locale 数据（make 会尊重 DESTDIR）
+	install -dm755 ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/locale
+	make -C ${TERMUX_PKG_SRCDIR}/localedata objdir=${TERMUX_PKG_BUILDDIR} \
+		SUPPORTED-LOCALES="C.UTF-8/UTF-8 en_US.UTF-8/UTF-8" install-locale-files
 
-    # 调试输出：列出打包目录内容，便于确认
-    echo "=== 打包目录内容 ($DESTDIR) ==="
-    ls -laR ${DESTDIR}${TERMUX_PREFIX} | head -100 || true
-    echo "================================"
+	# 删除 locale.gen 中的 C.UTF-8 行（在 DESTDIR 内操作）
+	sed -i '/#C\.UTF-8 /d' ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
+
+	# 安装 systemtap 头文件
+	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt.h ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt.h
+	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt-config.h ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt-config.h
+
+	# 创建 ld.so 软链接（在 DESTDIR 内）
+	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}${TERMUX_PREFIX}/bin/ld.so
+	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/ld.so
+
+	# 编译并安装 libsyscall_without_fsc.so（已修改为安装到 DESTDIR）
+	termux_glibc_make_syscall_without_fsc
+
+	# 调试输出：列出打包目录内容，便于确认
+	echo "=== 打包目录内容 ($DESTDIR) ==="
+	ls -laR ${DESTDIR}${TERMUX_PREFIX} | head -100 || true
+	echo "================================"
 }
