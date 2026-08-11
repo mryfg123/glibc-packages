@@ -104,7 +104,7 @@ termux_step_pre_configure() {
 }
 
 termux_step_configure() {
-	echo "slibdir=./data/data/com.linux.term/files/linux/lib" > configparms
+	echo "slibdir=/data/data/com.linux.term/files/linux/lib" > configparms
 	echo "rtlddir=/data/data/com.linux.term/files/linux/lib" >> configparms
 	echo "sbindir=/data/data/com.linux.term/files/linux/bin" >> configparms
 	echo "rootsbindir=/data/data/com.linux.term/files/linux/bin" >> configparms
@@ -217,11 +217,11 @@ termux_step_make_install_multilib() {
 	mkdir -p ${glibc32_dir}
 	make DESTDIR=${glibc32_dir} install
 
-	cp -TR ${glibc32_dir}//data/data/com.linux.term/files/linux/lib $TERMUX__PREFIX__LIB_DIR
-	cp -TR ${glibc32_dir}//data/data/com.linux.term/files/linux/include /data/data/com.linux.term/files/linux/include
-	cp -r ${glibc32_dir}//data/data/com.linux.term/files/linux/bin/ldd /data/data/com.linux.term/files/linux/bin/ldd32
-	cp -r ${glibc32_dir}//data/data/com.linux.term/files/linux/bin/ldconfig /data/data/com.linux.term/files/linux/bin/ldconfig32
-	cp -r ${glibc32_dir}//data/data/com.linux.term/files/linux/bin/getconf /data/data/com.linux.term/files/linux/bin/getconf32
+	cp -TR ${glibc32_dir}/data/data/com.linux.term/files/linux/lib $TERMUX__PREFIX__LIB_DIR
+	cp -TR ${glibc32_dir}/data/data/com.linux.term/files/linux/include /data/data/com.linux.term/files/linux/include
+	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/ldd /data/data/com.linux.term/files/linux/bin/ldd32
+	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/ldconfig /data/data/com.linux.term/files/linux/bin/ldconfig32
+	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/getconf /data/data/com.linux.term/files/linux/bin/getconf32
 	sed -i 's/ldd/ldd32/g' /data/data/com.linux.term/files/linux/bin/ldd32
 
 	rm -fr /data/data/com.linux.term/files/linux/lib/locale
