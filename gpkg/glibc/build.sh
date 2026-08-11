@@ -154,7 +154,8 @@ termux_step_make() {
 	if [ "$TERMUX_ARCH" = "$TERMUX_REAL_ARCH" ]; then
 		make info
 	fi
-}# 辅助函数：编译 libsyscall_without_fsc.so（也修改为安装到 DESTDIR）
+}
+# 辅助函数：编译 libsyscall_without_fsc.so（也修改为安装到 DESTDIR）
 termux_glibc_make_syscall_without_fsc() {
     local libname="libsyscall_without_fsc.so"
     echo "Compiling '${libname}'..."
