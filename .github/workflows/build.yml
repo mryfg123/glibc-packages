@@ -71,14 +71,14 @@ jobs:
             CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r "${BASE_COMMIT}" "HEAD")
           fi
         fi
-        mkdir -p ./artifacts ./pkgs
-        touch ./pkgs/.placeholder
+        mkdir -p ./artifacts ./debs
+        touch ./debs/.placeholder
 
         if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
           # Process tag '%ci:no-build' that may be added as line to commit message.
           # Forces CI to cancel current build with status 'passed'
           if grep -qiP '^\s*%ci:no-build\s*$' <(git log --format="%B" -n 1 "HEAD"); then
-            tar cf artifacts/pkgs-${{ matrix.target_arch }}.tar pkgs
+            tar cf artifacts/debs-${{ matrix.target_arch }}.tar debs
             echo "[!] Force exiting as tag '%ci:no-build' was applied to HEAD commit message."
             exit 0
           fi
@@ -118,7 +118,7 @@ jobs:
                     echo "$(basename "${file%%.subpackage.sh}")" >> ./built_${repo}_subpackages.txt
                   done
                 else
-                  echo "$pkg" >> ./deleted_${repo}_packages.txt
+                  echo "$pkg" >> ./deleted_${repo}_packages
                 fi
               fi
             done<<<${CHANGED_FILES}
@@ -175,11 +175,7 @@ jobs:
         fi
 
     - name: Build packages
-      env:
-        TERMUX__PREFIX_GLIBC: /data/data/com.linux.term/files/linux
-        TERMUX_PREFIX: /data/data/com.linux.term/files/linux
       run: |
-        set +e
         declare -a packages
         for repo_path in $(jq --raw-output 'del(.pkg_format) | keys | .[]' repo.json); do
           repo=$(jq --raw-output '.["'${repo_path}'"].name' repo.json)
@@ -198,51 +194,11 @@ jobs:
               firefox google-chrome-stable microsoft-edge-stable mono-runtime-common monodoc-manual ruby
             sudo apt autoremove -yq
             sudo rm -fr /opt/hostedtoolcache /usr/share/dotnet /usr/share/swift
-            NDK=$ANDROID_NDK_LATEST_HOME ANDROID_HOME=$ANDROID_SDK_ROOT ./build-package.sh -I -a ${{ matrix.target_arch }} --format pacman --library glibc $packages || true
+            NDK=$ANDROID_NDK_LATEST_HOME ANDROID_HOME=$ANDROID_SDK_ROOT ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages
           else
-            TERMUX_BUILDER_IMAGE_NAME="ghcr.io/termux/package-builder-cgct" ./scripts/run-docker.sh ./build-package.sh -I -a ${{ matrix.target_arch }} --format pacman --library glibc $packages || true
+            TERMUX_BUILDER_IMAGE_NAME="ghcr.io/termux/package-builder-cgct" ./scripts/run-docker.sh ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages
           fi
         fi
-        set -e
-
-    - name: Archive build directory (always)
-      if: always()
-      run: |
-        echo "=== 打包构建目录 ==="
-        BUILD_DIR="$HOME/.termux-build"
-        if [ -d "$BUILD_DIR" ]; then
-          echo "找到构建目录: $BUILD_DIR"
-          echo "目录大小: $(du -sh $BUILD_DIR | cut -f1)"
-          # 创建压缩包（排除一些大文件以减小体积）
-          tar -czf build-artifact-${{ matrix.target_arch }}.tar.gz \
-            -C "$BUILD_DIR" \
-            --exclude="*.o" \
-            --exclude="*.os" \
-            --exclude="cache" \
-            --exclude=".built-packages" \
-            . 2>/dev/null || \
-          tar -czf build-artifact-${{ matrix.target_arch }}.tar.gz -C "$BUILD_DIR" . 2>/dev/null || true
-          echo "✅ 构建目录已打包"
-          ls -lh build-artifact-${{ matrix.target_arch }}.tar.gz
-        else
-          echo "❌ 构建目录不存在: $BUILD_DIR"
-          # 尝试查找其他可能的构建目录
-          for dir in ./build ~/build /tmp/build; do
-            if [ -d "$dir" ]; then
-              echo "找到替代构建目录: $dir"
-              tar -czf build-artifact-${{ matrix.target_arch }}.tar.gz -C "$dir" . 2>/dev/null || true
-              break
-            fi
-          done
-        fi
-
-    - name: Upload build artifact (always)
-      if: always()
-      uses: actions/upload-artifact@v7.0.1
-      with:
-        name: build-artifact-${{ matrix.target_arch }}-${{ github.sha }}
-        path: build-artifact-${{ matrix.target_arch }}.tar.gz
-        if-no-files-found: ignore
 
     - name: Generate build artifacts
       if: always()
@@ -250,33 +206,31 @@ jobs:
         for repo in $(jq --raw-output 'del(.pkg_format) | .[].name' repo.json); do
           # Put package lists into directory with *.pkg.* files so they will be transferred to
           # upload job.
-          test -f ./built_${repo}_packages.txt && mv ./built_${repo}_packages.txt ./pkgs/
-          test -f ./built_${repo}_subpackages.txt && cat ./built_${repo}_subpackages.txt >> ./pkgs/built_${repo}_packages.txt \
+          test -f ./built_${repo}_packages.txt && mv ./built_${repo}_packages.txt ./debs/
+          test -f ./built_${repo}_subpackages.txt && cat ./built_${repo}_subpackages.txt >> ./debs/built_${repo}_packages.txt \
             && rm ./built_${repo}_subpackages.txt
-          test -f ./deleted_${repo}_packages.txt && mv ./deleted_${repo}_packages.txt ./pkgs/
+          test -f ./deleted_${repo}_packages.txt && mv ./deleted_${repo}_packages.txt ./debs/
 
           # Move only pkgs from built_packages into pkgs/ folder before
           # creating an archive.
           while read -r pkg; do
             # Match both $pkg.pkg.* and $pkg-static.pkg.*.
-            find output \( -name "$pkg_*.pkg.*" -o -name "$pkg-static_*.pkg.*" \) -type f -print0 | xargs -0r mv -t pkgs/
-          done < <(cat ./pkgs/built_${repo}_packages.txt)
+            find output \( -name "$pkg_*.deb" -o -name "$pkg-static_*.deb" \) -type f -print0 | xargs -0r mv -t debs/
+          done < <(cat ./debs/built_${repo}_packages.txt)
         done
 
         # Files containing certain symbols (e.g. ":") will cause failure in actions/upload-artifact.
-        # Archiving *.pkg.* files in a tarball to avoid issues with uploading.
-        tar cf artifacts/pkgs-${{ matrix.target_arch }}-${{ github.sha }}.tar pkgs
-
-    - name: Checksums for built *.pkg.* files
+        # Archiving *.deb files in a tarball to avoid issues with uploading.
+        tar cf artifacts/debs-${{ matrix.target_arch }}-${{ github.sha }}.tar debs
+    - name: Checksums for built *.deb files
       if: always()
       run: |
-        find pkgs -type f -name "*.pkg.*" -exec sha256sum "{}" \; | sort -k2
-
-    - name: Store *.pkg.* files
+        find debs -type f -name "*.deb" -exec sha256sum "{}" \; | sort -k2
+    - name: Store *.deb files
       if: always()
       uses: actions/upload-artifact@v7.0.1
       with:
-        name: pkgs-${{ matrix.target_arch }}-${{ github.sha }}
+        name: debs-${{ matrix.target_arch }}-${{ github.sha }}
         path: ./artifacts
 
   upload:
