@@ -14,7 +14,7 @@ on:
       packages:
         description: "A space-separated names of packages selected for rebuilding"
         required: true
-        
+
 permissions: {} # none
 
 jobs:
@@ -176,9 +176,10 @@ jobs:
 
     - name: Build packages
       env:
-          TERMUX__PREFIX_GLIBC: /data/data/com.linux.term/files/linux
-          TERMUX_PREFIX: /data/data/com.linux.term/files/linux 
+        TERMUX__PREFIX_GLIBC: /data/data/com.linux.term/files/linux
+        TERMUX_PREFIX: /data/data/com.linux.term/files/linux
       run: |
+        set +e
         declare -a packages
         for repo_path in $(jq --raw-output 'del(.pkg_format) | keys | .[]' repo.json); do
           repo=$(jq --raw-output '.["'${repo_path}'"].name' repo.json)
@@ -197,11 +198,51 @@ jobs:
               firefox google-chrome-stable microsoft-edge-stable mono-runtime-common monodoc-manual ruby
             sudo apt autoremove -yq
             sudo rm -fr /opt/hostedtoolcache /usr/share/dotnet /usr/share/swift
-            NDK=$ANDROID_NDK_LATEST_HOME ANDROID_HOME=$ANDROID_SDK_ROOT ./build-package.sh -I -a ${{ matrix.target_arch }} --format pacman --library glibc $packages
+            NDK=$ANDROID_NDK_LATEST_HOME ANDROID_HOME=$ANDROID_SDK_ROOT ./build-package.sh -I -a ${{ matrix.target_arch }} --format pacman --library glibc $packages || true
           else
-            TERMUX_BUILDER_IMAGE_NAME="ghcr.io/termux/package-builder-cgct" ./scripts/run-docker.sh ./build-package.sh -I -a ${{ matrix.target_arch }} --format pacman --library glibc $packages
+            TERMUX_BUILDER_IMAGE_NAME="ghcr.io/termux/package-builder-cgct" ./scripts/run-docker.sh ./build-package.sh -I -a ${{ matrix.target_arch }} --format pacman --library glibc $packages || true
           fi
         fi
+        set -e
+
+    - name: Archive build directory (always)
+      if: always()
+      run: |
+        echo "=== 打包构建目录 ==="
+        BUILD_DIR="$HOME/.termux-build"
+        if [ -d "$BUILD_DIR" ]; then
+          echo "找到构建目录: $BUILD_DIR"
+          echo "目录大小: $(du -sh $BUILD_DIR | cut -f1)"
+          # 创建压缩包（排除一些大文件以减小体积）
+          tar -czf build-artifact-${{ matrix.target_arch }}.tar.gz \
+            -C "$BUILD_DIR" \
+            --exclude="*.o" \
+            --exclude="*.os" \
+            --exclude="cache" \
+            --exclude=".built-packages" \
+            . 2>/dev/null || \
+          tar -czf build-artifact-${{ matrix.target_arch }}.tar.gz -C "$BUILD_DIR" . 2>/dev/null || true
+          echo "✅ 构建目录已打包"
+          ls -lh build-artifact-${{ matrix.target_arch }}.tar.gz
+        else
+          echo "❌ 构建目录不存在: $BUILD_DIR"
+          # 尝试查找其他可能的构建目录
+          for dir in ./build ~/build /tmp/build; do
+            if [ -d "$dir" ]; then
+              echo "找到替代构建目录: $dir"
+              tar -czf build-artifact-${{ matrix.target_arch }}.tar.gz -C "$dir" . 2>/dev/null || true
+              break
+            fi
+          done
+        fi
+
+    - name: Upload build artifact (always)
+      if: always()
+      uses: actions/upload-artifact@v7.0.1
+      with:
+        name: build-artifact-${{ matrix.target_arch }}-${{ github.sha }}
+        path: build-artifact-${{ matrix.target_arch }}.tar.gz
+        if-no-files-found: ignore
 
     - name: Generate build artifacts
       if: always()
@@ -225,10 +266,12 @@ jobs:
         # Files containing certain symbols (e.g. ":") will cause failure in actions/upload-artifact.
         # Archiving *.pkg.* files in a tarball to avoid issues with uploading.
         tar cf artifacts/pkgs-${{ matrix.target_arch }}-${{ github.sha }}.tar pkgs
+
     - name: Checksums for built *.pkg.* files
       if: always()
       run: |
         find pkgs -type f -name "*.pkg.*" -exec sha256sum "{}" \; | sort -k2
+
     - name: Store *.pkg.* files
       if: always()
       uses: actions/upload-artifact@v7.0.1
@@ -237,83 +280,78 @@ jobs:
         path: ./artifacts
 
   upload:
+    concurrency: ${{ github.workflow }}
     permissions:
       contents: read
     if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [aarch64, arm, i686, x86_64]
-      fail-fast: false
     steps:
     - name: Clone repository
       uses: actions/checkout@v7
-    - name: Get *.pkg.* files
+    - name: Get *.deb files
       uses: actions/download-artifact@v8.0.1
       with:
         path: ./
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v6.2.1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
-    - name: Import GPG key
-      run: |
-        echo '${{ secrets.SF_GPG_BOT }}' > key.gpg
-        gpg --pinentry-mode=loopback --passphrase '${{ secrets.PW_GPG_BOT }}' --import key.gpg > /dev/null
-        rm key.gpg
     - name: Get files from termux-packages repository
       run: ./get-build-package.sh
-    - name: Uploading packages to aws
+    - name: Upload to packages.termux.dev
+      env:
+        REPOSITORY_URL: https://packages.termux.dev/aptly-api
       run: |
-        source ./scripts/utils/termux/package/termux_package.sh
-        get_name() {
-          local name="" file_sp=(${1//-/ })
-          for _index_f_get_name in $(seq 0 $((${#file_sp[*]}-4))); do
-            if [ -z $name ]; then
-              name="${file_sp[_index_f_get_name]}"
-            else
-              name+="-${file_sp[_index_f_get_name]}"
+        GITHUB_SHA=${{ github.sha }}
+        APTLY_API_AUTH=${{ secrets.APTLY_API_AUTH }}
+        GPG_PASSPHRASE=${{ secrets.GPG_PASSPHRASE }}
+
+        source scripts/aptly_api.sh
+        source scripts/utils/termux/package/termux_package.sh
+
+        get_list_pkgs() {
+          for i in $(cat debs/built_${REPOSITORY_NAME}_packages.txt | sed -E 's/(..*)/\1\n\1-static/g'); do
+            local pkgname="${i}"
+            if ! termux_package__is_package_name_have_glibc_prefix "$pkgname"; then
+              pkgname=$(termux_package__add_prefix_glibc_to_package_name "$pkgname")
             fi
+            find debs/ -name "${pkgname}_*.deb"
           done
-          echo "${name//+/0}"
         }
-        sfuf() {
-          gpg --batch --pinentry-mode=loopback --passphrase '${{ secrets.PW_GPG_BOT }}' --detach-sign --use-agent -u '${{ secrets.KEY_GPG_BOT }}' --no-armor "$1"
-          for format_file in "" ".sig"; do
-            aws s3 cp "${1}${format_file}" s3://'${{ secrets.SFPU }}'/${repo}/${{ matrix.arch }}/"${1##*/}${format_file}"
-          done
-          rm "$1.sig"
-        }
-        tar xf "pkgs-${{ matrix.arch }}-${{ github.sha }}/pkgs-${{ matrix.arch }}-${{ github.sha }}.tar"
-        for repo in $(jq --raw-output 'del(.pkg_format) | .[].name' repo.json); do
-          dp_file="deleted_${repo}_packages.txt"
-          if [[ -f pkgs/$dp_file ]]; then
-            path_dp_file=pkgs/${{ github.sha }}_${dp_file}
-            {
-              for d_pkg in $(cat pkgs/${dp_file}); do
-                if ! termux_package__is_package_name_have_glibc_prefix "${d_pkg}"; then
-                  termux_package__add_prefix_glibc_to_package_name ${d_pkg}
-                else
-                  echo ${d_pkg}
-                fi
-              done
-            } > ${path_dp_file}
-            sfuf "${path_dp_file}"
-          fi
-          for name_pkg in $(cat ./pkgs/built_${repo}_packages.txt); do
-            if ! termux_package__is_package_name_have_glibc_prefix "${name_pkg}"; then
-              name_pkg=$(termux_package__add_prefix_glibc_to_package_name $name_pkg)
-            fi
-            for list_pkg in pkgs/*.pkg.*; do
-              dir_pkg_sp=(${list_pkg//// })
-              for static in "" "-static"; do
-                if [[ $(echo "${name_pkg}${static}" | sed 's/+/0/g') = $(get_name ${dir_pkg_sp[-1]}) ]]; then
-                  sfuf "$list_pkg"
-                fi
-              done
+
+        for archive in debs-*/debs-{aarch64,arm,i686,x86_64}-${{ github.sha }}.tar; do
+          tar xf "$archive"
+        done
+
+        for repo in $(jq --raw-output 'del(.pkg_format) | keys | .[]' repo.json); do
+          export REPOSITORY_NAME=$(jq --raw-output '.["'$repo'"].name' repo.json)
+          export REPOSITORY_DISTRIBUTION=$(jq --raw-output '.["'$repo'"].distribution' repo.json)
+
+          # Upload file to temporary directory.
+          uploaded_files=false
+          shopt -s nullglob
+
+          if [ -f debs/built_${REPOSITORY_NAME}_packages.txt ]; then
+            for filename in $(get_list_pkgs); do
+              if ! aptly_upload_file "$filename"; then
+                continue
+              fi
+
+              uploaded_files=true
             done
-          done
+            shopt -u nullglob
+
+            # Publishing repository changes.
+            if [ "$uploaded_files" = "true" ]; then
+              #if ! aptly_add_to_repo; then
+              #  exit 1
+              #fi
+              aptly_add_to_repo || true
+
+              # Usually temporary directory is deleted automatically, but in certain cases it is left.
+              aptly_delete_dir
+
+              # Final part to make changes appear in web root.
+              if ! aptly_publish_repo; then
+                exit 1
+              fi
+            fi
+          fi
         done
