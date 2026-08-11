@@ -10,6 +10,8 @@ TERMUX_PKG_DEPENDS="linux-api-headers-glibc"
 TERMUX_PKG_RECOMMENDS="glibc-runner"
 TERMUX_PKG_NO_STATICSPLIT=true
 TERMUX_PKG_CONFFILES="glibc/etc/gai.conf, glibc/etc/locale.gen"
+TERMUX_PKG_SEPARATE_SUB_DEPENDS=true
+TERMUX_PKG_BUILD_MULTILIB=true
 
 termux_step_pre_configure() {
 	if [ "$TERMUX_PACKAGE_LIBRARY" != "glibc" ]; then
@@ -23,7 +25,7 @@ termux_step_pre_configure() {
 
 	# installing special scripts for correct operation of system calls
 	cp ${TERMUX_PKG_BUILDER_DIR}/{shm{at,ctl,dt,get}.c,mprotect.c,syscall.c,fakesyscall*.h,fake_epoll_pwait2.c,setfs{u,g}id.c} \
-		${TERMUX_PKG_SRCDIR}/sysdeps/unix/sysv/linux/ #*
+		${TERMUX_PKG_SRCDIR}/sysdeps/unix/sysv/linux/
 
 	# installing and configuring scripts for parsing users/groups according to the android standard
 	cp ${TERMUX_PKG_BUILDER_DIR}/{android_passwd_group.*,android_system_user_ids.h} \
@@ -40,7 +42,7 @@ termux_step_pre_configure() {
 
 	# `fakesyscall.json` - json file that stores a list of unsupported syscalls for Termux in keys,
 	# the name of which indicates the fakesyscall function and how it will be launched
-	# = Syntax ==
+	# == Syntax ==
 	# {
 	#   "fakesyscall_1()": [
 	#     "syscall_1",
@@ -89,7 +91,7 @@ termux_step_pre_configure() {
 	# replacing some hard paths that may not exist in some device
 	for i in /dev/stderr:/proc/self/fd/2 \
 		/dev/stdin:/proc/self/fd/0 \
-		/dev/stdot:/proc/self/fd/1; do
+		/dev/stdout:/proc/self/fd/1; do
 		for j in $(grep -s -r -l ${i%%:*} ${TERMUX_PKG_SRCDIR}); do
 			sed -i "s|${i%%:*}|${i//*:}|g" ${j}
 		done
@@ -103,10 +105,10 @@ termux_step_pre_configure() {
 }
 
 termux_step_configure() {
-	echo "slibdir=/data/data/com.linux.term/files/linux/lib" > configparms
-	echo "rtlddir=/data/data/com.linux.term/files/linux/lib" >> configparms
-	echo "sbindir=/data/data/com.linux.term/files/linux/bin" >> configparms
-	echo "rootsbindir=/data/data/com.linux.term/files/linux/bin" >> configparms
+	echo "slibdir=${TERMUX__PREFIX__LIB_DIR}" > configparms
+	echo "rtlddir=${TERMUX__PREFIX__LIB_DIR}" >> configparms
+	echo "sbindir=${TERMUX_PREFIX}/bin" >> configparms
+	echo "rootsbindir=${TERMUX_PREFIX}/bin" >> configparms
 
 	local _configure_flags=()
 	case $TERMUX_ARCH in
@@ -114,9 +116,6 @@ termux_step_configure() {
 		"arm"|"i686") _configure_flags+=(--enable-fortify-source);;
 		"x86_64") _configure_flags+=(--enable-cet);;
 	esac
-
-	# 新增：禁用 ldconfig 和 localedef（避免 Android 环境下的断言错误）
-	_configure_flags+=(--disable-ldconfig --disable-localedef)
 
 	local _pkgversion="GNU libc for Android"
 	if [ -n "${TERMUX_APP_PACKAGE-}" ]; then
@@ -158,14 +157,14 @@ termux_step_make() {
 	fi
 }
 
-# 辅助函数：编译 libsyscall_without_fsc.so（修改为安装到 DESTDIR）
 termux_glibc_make_syscall_without_fsc() {
 	local libname="libsyscall_without_fsc.so"
 	echo "Compiling '${libname}'..."
 	$CC ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${TERMUX__PREFIX__LIB_DIR}/${libname} \
-		-shared -DWITHOUT_FAKESYSCALL || true
+		-shared -DWITHOUT_FAKESYSCALL
 	echo "DONE"
 }
+
 termux_step_make_install() {
 	rm -fr ${TERMUX__PREFIX__INCLUDE_DIR}/gnu
 
