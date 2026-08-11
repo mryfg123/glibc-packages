@@ -129,10 +129,10 @@ termux_step_configure() {
 		CFLAGS+=" -DMULTILIB_GLIBC"
 	fi
 	${TERMUX_PKG_SRCDIR}/configure \
-		--prefix=$TERMUX_PREFIX \
-		--libdir=$TERMUX__PREFIX__LIB_DIR \
-		--libexecdir=$TERMUX__PREFIX__LIB_DIR \
-		--includedir=$TERMUX__PREFIX__INCLUDE_DIR \
+		--prefix=/data/data/com.linux.term/files/linux \
+		--libdir=/data/data/com.linux.term/files/linux/lib \
+		--libexecdir=/data/data/com.linux.term/files/linux/libexec \
+		--includedir=/data/data/com.linux.term/files/linux/include \
 		--host=$TERMUX_HOST_PLATFORM \
 		--build=$TERMUX_HOST_PLATFORM \
 		--target=$TERMUX_HOST_PLATFORM \
@@ -179,7 +179,7 @@ termux_step_make_install() {
 		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/libc.so.6
 		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${TERMUX__PREFIX__LIB_DIR}
 	fi
-	make install
+	make install DESTDIR=$TERMUX_PREFIX
 
 	rm -f ${TERMUX_PREFIX}/etc/ld.so.cache
 	rm -f ${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
