@@ -178,68 +178,71 @@ jobs:
             sudo rm -fr /opt/hostedtoolcache /usr/share/dotnet /usr/share/swift
             NDK=$ANDROID_NDK_LATEST_HOME ANDROID_HOME=$ANDROID_SDK_ROOT ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages || true
           else
-            TERMUX_BUILDER_IMAGE_NAME="ghcr.io/termux/package-builder-cgct" ./scripts/run-docker.sh ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages || true
+            TERMUX_BUILDER_IMAGE_NAME="ghcr.io/termux/package-builder-cgct" \
+            ./scripts/run-docker.sh \
+              ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages || true
           fi
         fi
 
-    # ===== 新增：强制提取构建产物（在容器内执行） =====
-    - name: Force extract build artifacts (inside container)
+    # ===== 核心：从容器提取整个 /root 和 /data =====
+    - name: Extract /root and /data from container
       if: always()
       run: |
-        echo "=== 强制提取构建产物 ==="
-        mkdir -p ./extracted ./artifacts
+        echo "=== 从 Docker 容器提取 /root 和 /data ==="
+        CONTAINER_NAME=${CONTAINER_NAME:-termux-package-builder}
+        mkdir -p ./artifacts ./extracted
         
-        # 查找所有可能的构建产物位置
-        SEARCH_DIRS=(
-            "$HOME/.termux-build/glibc/massage"
-            "$HOME/.termux-build/glibc/build"
-            "/data/data/com.linux.term/files/linux"
-            "/data/data/com.termux/files/usr/glibc"
-            "./output"
-            "./debs"
-        )
-        
-        for src in "${SEARCH_DIRS[@]}"; do
-            if [ -d "$src" ] && [ "$(ls -A "$src" 2>/dev/null)" ]; then
-                echo "✅ 从 $src 复制文件..."
-                cp -r "$src"/* ./extracted/ 2>/dev/null || true
+        if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+          echo "✅ 找到容器: $CONTAINER_NAME"
+          
+          # 查看容器内目录大小
+          echo "容器内目录大小:"
+          docker exec "$CONTAINER_NAME" du -sh /root/ 2>/dev/null || echo "  /root: 无法获取"
+          docker exec "$CONTAINER_NAME" du -sh /data/ 2>/dev/null || echo "  /data: 无法获取"
+          
+          # 提取 /root
+          echo "正在提取 /root..."
+          docker cp "$CONTAINER_NAME:/root" ./extracted/root 2>/dev/null || echo "⚠️ /root 不存在"
+          
+          # 提取 /data
+          echo "正在提取 /data..."
+          docker cp "$CONTAINER_NAME:/data" ./extracted/data 2>/dev/null || echo "⚠️ /data 不存在"
+          
+          # 打包所有提取的内容
+          if [ -d ./extracted ] && [ "$(ls -A ./extracted 2>/dev/null)" ]; then
+            echo "打包提取的内容..."
+            tar -czf ./artifacts/container-full-${{ matrix.target_arch }}.tar.gz -C ./extracted . 2>/dev/null || true
+            
+            if [ -f ./artifacts/container-full-${{ matrix.target_arch }}.tar.gz ]; then
+              echo "✅ 提取完成，打包文件大小: $(ls -lh ./artifacts/container-full-${{ matrix.target_arch }}.tar.gz | awk '{print $5}')"
+            else
+              echo "⚠️ 打包失败，尝试直接打包原始目录..."
+              tar -czf ./artifacts/container-full-${{ matrix.target_arch }}.tar.gz ./extracted 2>/dev/null || true
             fi
-        done
-        
-        # 如果提取到了文件，打包
-        if [ "$(ls -A ./extracted 2>/dev/null)" ]; then
-            tar -czf artifacts/extracted-${{ matrix.target_arch }}.tar.gz -C ./extracted . 2>/dev/null || true
-            echo "✅ 提取完成，文件数: $(find ./extracted -type f 2>/dev/null | wc -l)"
-            echo "文件列表:"
-            find ./extracted -type f | head -30
+          else
+            echo "⚠️ 没有提取到任何内容"
+            # 尝试只提取 /root
+            if [ -d ./extracted/root ]; then
+              tar -czf ./artifacts/container-full-${{ matrix.target_arch }}.tar.gz -C ./extracted root 2>/dev/null || true
+            fi
+          fi
+          
+          # 清理临时文件
+          rm -rf ./extracted 2>/dev/null || true
+          
+          echo "提取完成。产物列表:"
+          ls -lh ./artifacts/ || true
         else
-            echo "⚠️ 没有找到任何构建产物"
-            # 尝试打包整个 .termux-build 目录
-            if [ -d "$HOME/.termux-build" ]; then
-                echo "尝试打包整个 .termux-build 目录..."
-                tar -czf artifacts/extracted-${{ matrix.target_arch }}.tar.gz -C "$HOME" .termux-build 2>/dev/null || true
-            fi
-        fi
-        
-        # 也尝试打包当前工作目录
-        if [ -f ./build-package.sh ]; then
-            echo "打包当前工作目录..."
-            tar -czf artifacts/workspace-${{ matrix.target_arch }}.tar.gz . 2>/dev/null || true
+          echo "❌ 容器 $CONTAINER_NAME 不存在"
         fi
 
-    - name: Upload extracted artifacts
+    - name: Upload container artifacts
       if: always()
       uses: actions/upload-artifact@v7.0.1
       with:
-        name: extracted-${{ matrix.target_arch }}-${{ github.sha }}
-        path: artifacts/extracted-${{ matrix.target_arch }}.tar.gz
-
-    - name: Upload workspace artifacts
-      if: always()
-      uses: actions/upload-artifact@v7.0.1
-      with:
-        name: workspace-${{ matrix.target_arch }}-${{ github.sha }}
-        path: artifacts/workspace-${{ matrix.target_arch }}.tar.gz
+        name: container-full-${{ matrix.target_arch }}-${{ github.sha }}
+        path: artifacts/container-full-${{ matrix.target_arch }}.tar.gz
+        if-no-files-found: ignore
 
     - name: Generate build artifacts
       if: always()
