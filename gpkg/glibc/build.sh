@@ -130,7 +130,7 @@ termux_step_configure() {
 		CFLAGS+=" -DMULTILIB_GLIBC"
 	fi
 	${TERMUX_PKG_SRCDIR}/configure \
-		--prefix=/data/data/com.linux.term/files/linux \
+		--prefix=$TERMUX_PREFIX \
 		--libdir=/data/data/com.linux.term/files/linux/lib \
 		--libexecdir=/data/data/com.linux.term/files/linux/libexec \
 		--includedir=/data/data/com.linux.term/files/linux/include \
