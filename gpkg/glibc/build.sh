@@ -162,80 +162,77 @@ termux_step_make() {
 termux_glibc_make_syscall_without_fsc() {
 	local libname="libsyscall_without_fsc.so"
 	echo "Compiling '${libname}'..."
-	${CC} ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${DESTDIR}/data/data/com.linux.term/files/linux/lib/${libname} \
+	$CC ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${TERMUX__PREFIX__LIB_DIR}/${libname} \
 		-shared -DWITHOUT_FAKESYSCALL
 	echo "DONE"
 }
 
 termux_step_make_install() {
-	# 关键：设置 DESTDIR 指向打包目录
-	export DESTDIR="${TERMUX_PKG_MASSAGEDIR}"
+	rm -fr ${TERMUX__PREFIX__INCLUDE_DIR}/gnu
 
-	# 确保打包目录的顶级目录存在
-	mkdir -p ${DESTDIR}${TERMUX_PREFIX}
-
-	# 删除目标目录中的旧 gnu 头文件（在 DESTDIR 内操作）
-	rm -fr ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/gnu
-
-	# 设备上构建的特殊处理（也使用 DESTDIR）
 	if [ "$TERMUX_ON_DEVICE_BUILD" = "true" ]; then
-		# 如果设备上构建，先安装库文件到 DESTDIR
+		# If there have been no glibc updates on the device for a long time,
+		# then when installing glibc components in the usual way (`make install`),
+		# the glibc environment may break. Therefore, you need to install the libraries first,
+		# and then everything else.
 		local glibc_dir="${TERMUX_PKG_TMPDIR}/glibc/"
 		mkdir -p ${glibc_dir}
 		make DESTDIR=${glibc_dir} elf/ldso_install install-lib
-		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}//data/data/com.linux.term/files/linux/lib/libc.so.6
-		# 拷贝到 DESTDIR
-		cp -r ${glibc_dir}//data/data/com.linux.term/files/linux/lib/* ${DESTDIR}/data/data/com.linux.term/files/linux/lib/
+		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/libc.so.6
+		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${TERMUX__PREFIX__LIB_DIR}
 	fi
-
-	# 主要安装：make install 会安装到 DESTDIR
 	make install
 
-	# 删除安装后生成的不必要文件（在 DESTDIR 内）
-	rm -f ${DESTDIR}${TERMUX_PREFIX}/etc/ld.so.cache
-	rm -f ${DESTDIR}${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
+	rm -f ${TERMUX_PREFIX}/etc/ld.so.cache
+	rm -f ${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
 
-	# 安装 nscd 配置文件
-	install -dm755 ${DESTDIR}/data/data/com.linux.term/files/linux/lib/tmpfiles.d
-	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf ${DESTDIR}${TERMUX_PREFIX}/etc/nscd.conf
-	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles ${DESTDIR}/data/data/com.linux.term/files/linux/lib/tmpfiles.d/nscd.conf
-	install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf ${DESTDIR}${TERMUX_PREFIX}/etc/gai.conf
+	install -dm755 ${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf ${TERMUX_PREFIX}/etc/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles ${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf ${TERMUX_PREFIX}/etc/gai.conf
+	install -m755 ${TERMUX_PKG_BUILDER_DIR}/locale-gen ${TERMUX_PREFIX}/bin
+	sed -i "s|@TERMUX_PREFIX@|$TERMUX_PREFIX|g; s|@TERMUX_PREFIX_CLASSICAL@|$TERMUX_PREFIX_CLASSICAL|g" \
+		${TERMUX_PREFIX}/bin/locale-gen
 
-	# 安装 locale-gen 脚本并替换其中的占位符
-	install -m755 ${TERMUX_PKG_BUILDER_DIR}/locale-gen ${DESTDIR}${TERMUX_PREFIX}/bin
-	sed -i "s|@TERMUX_PREFIX@|${TERMUX_PREFIX}|g; s|@TERMUX_PREFIX_CLASSICAL@|${TERMUX_PREFIX_CLASSICAL}|g" \
-		${DESTDIR}${TERMUX_PREFIX}/bin/locale-gen
-
-	# 安装 locale.gen
-	install -m644 ${TERMUX_PKG_BUILDER_DIR}/locale.gen.txt ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
+	install -m644 ${TERMUX_PKG_BUILDER_DIR}/locale.gen.txt ${TERMUX_PREFIX}/etc/locale.gen
 	sed -e '1,3d' -e 's|/| |g' -e 's|\\| |g' -e 's|^|#|g' \
-		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED >> ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
+		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED >> ${TERMUX_PREFIX}/etc/locale.gen
 
-	# 安装 SUPPORTED 文件
 	sed -e '1,3d' -e 's|/| |g' -e 's| \\||g' \
-		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > ${DESTDIR}${TERMUX_PREFIX}/share/i18n/SUPPORTED
+		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > ${TERMUX_PREFIX}/share/i18n/SUPPORTED
 
-	# 安装 locale 数据（make 会尊重 DESTDIR）
-	install -dm755 ${DESTDIR}/data/data/com.linux.term/files/linux/lib/locale
+	install -dm755 ${TERMUX__PREFIX__LIB_DIR}/locale
 	make -C ${TERMUX_PKG_SRCDIR}/localedata objdir=${TERMUX_PKG_BUILDDIR} \
 		SUPPORTED-LOCALES="C.UTF-8/UTF-8 en_US.UTF-8/UTF-8" install-locale-files
+	sed -i '/#C\.UTF-8 /d' ${TERMUX_PREFIX}/etc/locale.gen
 
-	# 删除 locale.gen 中的 C.UTF-8 行（在 DESTDIR 内操作）
-	sed -i '/#C\.UTF-8 /d' ${DESTDIR}${TERMUX_PREFIX}/etc/locale.gen
+	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt.h ${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt.h
+	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt-config.h ${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt-config.h
 
-	# 安装 systemtap 头文件
-	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt.h ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt.h
-	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt-config.h ${DESTDIR}${TERMUX__PREFIX__INCLUDE_DIR}/sys/sdt-config.h
+	ln -sfr $PATH_DYNAMIC_LINKER ${TERMUX_PREFIX}/bin/ld.so
+	ln -sfr $PATH_DYNAMIC_LINKER ${TERMUX__PREFIX__LIB_DIR}/ld.so
 
-	# 创建 ld.so 软链接（在 DESTDIR 内）
-	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}${TERMUX_PREFIX}/bin/ld.so
-	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}/data/data/com.linux.term/files/linux/lib/ld.so
-
-	# 编译并安装 libsyscall_without_fsc.so（已修改为安装到 DESTDIR）
 	termux_glibc_make_syscall_without_fsc
+}
 
-	# 调试输出：列出打包目录内容，便于确认
-	echo "=== 打包目录内容 ($DESTDIR) ==="
-	ls -laR ${DESTDIR}${TERMUX_PREFIX} | head -100 || true
-	echo "================================"
+termux_step_make_install_multilib() {
+	local glibc32_dir="${TERMUX_PKG_TMPDIR}/glibc32/"
+	mkdir -p ${glibc32_dir}
+	make DESTDIR=${glibc32_dir} install
+
+	cp -TR ${glibc32_dir}/${TERMUX__PREFIX__LIB_DIR} $TERMUX__PREFIX__LIB_DIR
+	cp -TR ${glibc32_dir}/${TERMUX__PREFIX__INCLUDE_DIR} $TERMUX__PREFIX__INCLUDE_DIR
+	cp -r ${glibc32_dir}/${TERMUX_PREFIX}/bin/ldd ${TERMUX_PREFIX}/bin/ldd32
+	cp -r ${glibc32_dir}/${TERMUX_PREFIX}/bin/ldconfig ${TERMUX_PREFIX}/bin/ldconfig32
+	cp -r ${glibc32_dir}/${TERMUX_PREFIX}/bin/getconf ${TERMUX_PREFIX}/bin/getconf32
+	sed -i 's/ldd/ldd32/g' ${TERMUX_PREFIX}/bin/ldd32
+
+	rm -fr ${TERMUX__PREFIX__LIB_DIR}/locale
+	ln -sfr ${TERMUX__PREFIX__BASE_LIB_DIR}/locale ${TERMUX__PREFIX__LIB_DIR}/locale
+
+	ln -sfr ${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} $PATH_DYNAMIC_LINKER
+	ln -sfr ${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} ${TERMUX_PREFIX}/bin/ld32.so
+	ln -sfr ${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} ${TERMUX__PREFIX__LIB_DIR}/ld.so
+
+	termux_glibc_make_syscall_without_fsc
 }
