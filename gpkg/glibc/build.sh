@@ -165,71 +165,76 @@ termux_glibc_make_syscall_without_fsc() {
 }
 
 termux_step_make_install() {
-	rm -fr /data/data/com.linux.term/files/linux/include/gnu
+	# 1. 设置 DESTDIR，使 make install 安装到打包目录
+	export DESTDIR="${TERMUX_PKG_MASSAGEDIR}"
+
+	rm -fr ${DESTDIR}/data/data/com.linux.term/files/linux/include/gnu
 
 	if [ "$TERMUX_ON_DEVICE_BUILD" = "true" ]; then
-		# If there have been no glibc updates on the device for a long time,
-		# then when installing glibc components in the usual way (`make install`),
-		# the glibc environment may break. Therefore, you need to install the libraries first,
-		# and then everything else.
+		# 设备上构建（云端不会进入）
 		local glibc_dir="${TERMUX_PKG_TMPDIR}/glibc/"
 		mkdir -p ${glibc_dir}
 		make DESTDIR=${glibc_dir} elf/ldso_install install-lib
-		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}//data/data/com.linux.term/files/linux/lib/libc.so.6
-		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}//data/data/com.linux.term/files/linux/lib/* /data/data/com.linux.term/files/linux/lib
+		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/data/data/com.linux.term/files/linux/lib/libc.so.6
+		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}/data/data/com.linux.term/files/linux/lib/* ${DESTDIR}/data/data/com.linux.term/files/linux/lib
 	fi
+
+	# 2. 主要安装（使用 DESTDIR）
 	make install
 
-	rm -f /data/data/com.linux.term/files/linux/etc/ld.so.cache
-	rm -f /data/data/com.linux.term/files/linux/bin/{tzselect,zdump,zic}
+	# 3. 后续所有自定义安装/删除/链接操作，目标路径一律加 ${DESTDIR}
+	rm -f ${DESTDIR}/data/data/com.linux.term/files/linux/etc/ld.so.cache
+	rm -f ${DESTDIR}/data/data/com.linux.term/files/linux/bin/{tzselect,zdump,zic}
 
-	install -dm755 /data/data/com.linux.term/files/linux/lib/tmpfiles.d
-	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf /data/data/com.linux.term/files/linux/etc/nscd.conf
-	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles /data/data/com.linux.term/files/linux/lib/tmpfiles.d/nscd.conf
-	install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf /data/data/com.linux.term/files/linux/etc/gai.conf
-	install -m755 ${TERMUX_PKG_BUILDER_DIR}/locale-gen /data/data/com.linux.term/files/linux/bin
+	install -dm755 ${DESTDIR}/data/data/com.linux.term/files/linux/lib/tmpfiles.d
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf ${DESTDIR}/data/data/com.linux.term/files/linux/etc/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles ${DESTDIR}/data/data/com.linux.term/files/linux/lib/tmpfiles.d/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf ${DESTDIR}/data/data/com.linux.term/files/linux/etc/gai.conf
+	install -m755 ${TERMUX_PKG_BUILDER_DIR}/locale-gen ${DESTDIR}/data/data/com.linux.term/files/linux/bin
 	sed -i "s|@TERMUX_PREFIX@|/data/data/com.linux.term/files/linux|g; s|@TERMUX_PREFIX_CLASSICAL@|$TERMUX_PREFIX_CLASSICAL|g" \
-		/data/data/com.linux.term/files/linux/bin/locale-gen
+		${DESTDIR}/data/data/com.linux.term/files/linux/bin/locale-gen
 
-	install -m644 ${TERMUX_PKG_BUILDER_DIR}/locale.gen.txt /data/data/com.linux.term/files/linux/etc/locale.gen
+	install -m644 ${TERMUX_PKG_BUILDER_DIR}/locale.gen.txt ${DESTDIR}/data/data/com.linux.term/files/linux/etc/locale.gen
 	sed -e '1,3d' -e 's|/| |g' -e 's|\\| |g' -e 's|^|#|g' \
-		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED >> /data/data/com.linux.term/files/linux/etc/locale.gen
+		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED >> ${DESTDIR}/data/data/com.linux.term/files/linux/etc/locale.gen
 
 	sed -e '1,3d' -e 's|/| |g' -e 's| \\||g' \
-		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > /data/data/com.linux.term/files/linux/share/i18n/SUPPORTED
+		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > ${DESTDIR}/data/data/com.linux.term/files/linux/share/i18n/SUPPORTED
 
-	install -dm755 /data/data/com.linux.term/files/linux/lib/locale
+	install -dm755 ${DESTDIR}/data/data/com.linux.term/files/linux/lib/locale
 	make -C ${TERMUX_PKG_SRCDIR}/localedata objdir=${TERMUX_PKG_BUILDDIR} \
 		SUPPORTED-LOCALES="C.UTF-8/UTF-8 en_US.UTF-8/UTF-8" install-locale-files
-	sed -i '/#C\.UTF-8 /d' /data/data/com.linux.term/files/linux/etc/locale.gen
+	sed -i '/#C\.UTF-8 /d' ${DESTDIR}/data/data/com.linux.term/files/linux/etc/locale.gen
 
-	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt.h /data/data/com.linux.term/files/linux/include/sys/sdt.h
-	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt-config.h /data/data/com.linux.term/files/linux/include/sys/sdt-config.h
+	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt.h ${DESTDIR}/data/data/com.linux.term/files/linux/include/sys/sdt.h
+	install -Dm644 ${TERMUX_PKG_BUILDER_DIR}/sdt-config.h ${DESTDIR}/data/data/com.linux.term/files/linux/include/sys/sdt-config.h
 
-	ln -sfr $PATH_DYNAMIC_LINKER /data/data/com.linux.term/files/linux/bin/ld.so
-	ln -sfr $PATH_DYNAMIC_LINKER /data/data/com.linux.term/files/linux/lib/ld.so
+	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}/data/data/com.linux.term/files/linux/bin/ld.so
+	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}/data/data/com.linux.term/files/linux/lib/ld.so
 
 	termux_glibc_make_syscall_without_fsc
 }
 
 termux_step_make_install_multilib() {
 	local glibc32_dir="${TERMUX_PKG_TMPDIR}/glibc32/"
+	local MASSAGE="${TERMUX_PKG_MASSAGEDIR}"
 	mkdir -p ${glibc32_dir}
 	make DESTDIR=${glibc32_dir} install
 
-	cp -TR ${glibc32_dir}/data/data/com.linux.term/files/linux/lib $TERMUX__PREFIX__LIB_DIR
-	cp -TR ${glibc32_dir}/data/data/com.linux.term/files/linux/include /data/data/com.linux.term/files/linux/include
-	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/ldd /data/data/com.linux.term/files/linux/bin/ldd32
-	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/ldconfig /data/data/com.linux.term/files/linux/bin/ldconfig32
-	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/getconf /data/data/com.linux.term/files/linux/bin/getconf32
-	sed -i 's/ldd/ldd32/g' /data/data/com.linux.term/files/linux/bin/ldd32
+	# 所有复制/链接的目标路径添加 $MASSAGE 前缀
+	cp -TR ${glibc32_dir}/data/data/com.linux.term/files/linux/lib ${MASSAGE}${TERMUX__PREFIX__LIB_DIR}
+	cp -TR ${glibc32_dir}/data/data/com.linux.term/files/linux/include ${MASSAGE}${TERMUX__PREFIX__INCLUDE_DIR}
+	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/ldd ${MASSAGE}${TERMUX_PREFIX}/bin/ldd32
+	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/ldconfig ${MASSAGE}${TERMUX_PREFIX}/bin/ldconfig32
+	cp -r ${glibc32_dir}/data/data/com.linux.term/files/linux/bin/getconf ${MASSAGE}${TERMUX_PREFIX}/bin/getconf32
+	sed -i 's/ldd/ldd32/g' ${MASSAGE}${TERMUX_PREFIX}/bin/ldd32
 
-	rm -fr /data/data/com.linux.term/files/linux/lib/locale
-	ln -sfr ${TERMUX__PREFIX__BASE_LIB_DIR}/locale /data/data/com.linux.term/files/linux/lib/locale
+	rm -fr ${MASSAGE}${TERMUX__PREFIX__LIB_DIR}/locale
+	ln -sfr ${MASSAGE}${TERMUX__PREFIX__BASE_LIB_DIR}/locale ${MASSAGE}${TERMUX__PREFIX__LIB_DIR}/locale
 
-	ln -sfr /data/data/com.linux.term/files/linux/lib/${DYNAMIC_LINKER} $PATH_DYNAMIC_LINKER
-	ln -sfr /data/data/com.linux.term/files/linux/lib/${DYNAMIC_LINKER} /data/data/com.linux.term/files/linux/bin/ld32.so
-	ln -sfr /data/data/com.linux.term/files/linux/lib/${DYNAMIC_LINKER} /data/data/com.linux.term/files/linux/lib/ld.so
+	ln -sfr ${MASSAGE}${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} ${MASSAGE}${PATH_DYNAMIC_LINKER}
+	ln -sfr ${MASSAGE}${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} ${MASSAGE}${TERMUX_PREFIX}/bin/ld32.so
+	ln -sfr ${MASSAGE}${TERMUX__PREFIX__LIB_DIR}/${DYNAMIC_LINKER} ${MASSAGE}${TERMUX__PREFIX__LIB_DIR}/ld.so
 
 	termux_glibc_make_syscall_without_fsc
 }
