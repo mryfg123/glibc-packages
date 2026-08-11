@@ -89,7 +89,7 @@ termux_step_pre_configure() {
 	# replacing some hard paths that may not exist in some device
 	for i in /dev/stderr:/proc/self/fd/2 \
 		/dev/stdin:/proc/self/fd/0 \
-		/dev/stdout:/proc/self/fd/1; do
+		/dev/stdot:/proc/self/fd/1; do
 		for j in $(grep -s -r -l ${i%%:*} ${TERMUX_PKG_SRCDIR}); do
 			sed -i "s|${i%%:*}|${i//*:}|g" ${j}
 		done
@@ -166,7 +166,6 @@ termux_glibc_make_syscall_without_fsc() {
 		-shared -DWITHOUT_FAKESYSCALL || true
 	echo "DONE"
 }
-
 termux_step_make_install() {
 	rm -fr ${TERMUX__PREFIX__INCLUDE_DIR}/gnu
 
@@ -236,3 +235,4 @@ termux_step_make_install_multilib() {
 
 	termux_glibc_make_syscall_without_fsc
 }
+
