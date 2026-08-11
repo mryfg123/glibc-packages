@@ -179,7 +179,6 @@ termux_step_make_install() {
 		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/libc.so.6
 		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${TERMUX__PREFIX__LIB_DIR}
 	fi
-	echo $TERMUX_PKG_MASSAGEDIR
 	make install 
 
 	rm -f ${TERMUX_PREFIX}/etc/ld.so.cache
