@@ -162,7 +162,7 @@ termux_step_make() {
 termux_glibc_make_syscall_without_fsc() {
 	local libname="libsyscall_without_fsc.so"
 	echo "Compiling '${libname}'..."
-	${CC} ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/${libname} \
+	${CC} ${TERMUX_PKG_BUILDER_DIR}/syscall.c -o ${DESTDIR}/data/data/com.linux.term/files/linux/lib/${libname} \
 		-shared -DWITHOUT_FAKESYSCALL
 	echo "DONE"
 }
@@ -183,9 +183,9 @@ termux_step_make_install() {
 		local glibc_dir="${TERMUX_PKG_TMPDIR}/glibc/"
 		mkdir -p ${glibc_dir}
 		make DESTDIR=${glibc_dir} elf/ldso_install install-lib
-		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/libc.so.6
+		cp -r ${TERMUX_PKG_BUILDDIR}/libc.so ${glibc_dir}//data/data/com.linux.term/files/linux/lib/libc.so.6
 		# 拷贝到 DESTDIR
-		cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/
+		cp -r ${glibc_dir}//data/data/com.linux.term/files/linux/lib/* ${DESTDIR}/data/data/com.linux.term/files/linux/lib/
 	fi
 
 	# 主要安装：make install 会安装到 DESTDIR
@@ -196,9 +196,9 @@ termux_step_make_install() {
 	rm -f ${DESTDIR}${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
 
 	# 安装 nscd 配置文件
-	install -dm755 ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d
+	install -dm755 ${DESTDIR}/data/data/com.linux.term/files/linux/lib/tmpfiles.d
 	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.conf ${DESTDIR}${TERMUX_PREFIX}/etc/nscd.conf
-	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/tmpfiles.d/nscd.conf
+	install -m644 ${TERMUX_PKG_SRCDIR}/nscd/nscd.tmpfiles ${DESTDIR}/data/data/com.linux.term/files/linux/lib/tmpfiles.d/nscd.conf
 	install -m644 ${TERMUX_PKG_SRCDIR}/posix/gai.conf ${DESTDIR}${TERMUX_PREFIX}/etc/gai.conf
 
 	# 安装 locale-gen 脚本并替换其中的占位符
@@ -216,7 +216,7 @@ termux_step_make_install() {
 		${TERMUX_PKG_SRCDIR}/localedata/SUPPORTED > ${DESTDIR}${TERMUX_PREFIX}/share/i18n/SUPPORTED
 
 	# 安装 locale 数据（make 会尊重 DESTDIR）
-	install -dm755 ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/locale
+	install -dm755 ${DESTDIR}/data/data/com.linux.term/files/linux/lib/locale
 	make -C ${TERMUX_PKG_SRCDIR}/localedata objdir=${TERMUX_PKG_BUILDDIR} \
 		SUPPORTED-LOCALES="C.UTF-8/UTF-8 en_US.UTF-8/UTF-8" install-locale-files
 
@@ -229,7 +229,7 @@ termux_step_make_install() {
 
 	# 创建 ld.so 软链接（在 DESTDIR 内）
 	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}${TERMUX_PREFIX}/bin/ld.so
-	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}${TERMUX__PREFIX__LIB_DIR}/ld.so
+	ln -sfr ${DESTDIR}${PATH_DYNAMIC_LINKER} ${DESTDIR}/data/data/com.linux.term/files/linux/lib/ld.so
 
 	# 编译并安装 libsyscall_without_fsc.so（已修改为安装到 DESTDIR）
 	termux_glibc_make_syscall_without_fsc
