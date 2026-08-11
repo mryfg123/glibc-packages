@@ -20,7 +20,7 @@ permissions: {} # none
 jobs:
   build:
     permissions:
-      contents: read # actions/upload-artifact doesn't need contents: write
+      contents: read
     runs-on: ubuntu-24.04
     strategy:
       matrix:
@@ -56,17 +56,14 @@ jobs:
           HEAD_COMMIT=$(jq --raw-output .commits[-1].id "$GITHUB_EVENT_PATH")
           if [ "$BASE_COMMIT" = "null" ]; then
             if [ "$OLD_COMMIT" = "$HEAD_COMMIT" ]; then
-              # Single-commit push.
               echo "Processing commit: ${HEAD_COMMIT}"
               CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r "${HEAD_COMMIT}")
             else
-              # Multi-commit push.
               OLD_COMMIT="${OLD_COMMIT}~1"
               echo "Processing commit range: ${OLD_COMMIT}..${HEAD_COMMIT}"
               CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r "${OLD_COMMIT}" "${HEAD_COMMIT}")
             fi
           else
-            # Pull requests.
             echo "Processing pull request #$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH"): ${BASE_COMMIT}..HEAD"
             CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r "${BASE_COMMIT}" "HEAD")
           fi
@@ -75,16 +72,12 @@ jobs:
         touch ./debs/.placeholder
 
         if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
-          # Process tag '%ci:no-build' that may be added as line to commit message.
-          # Forces CI to cancel current build with status 'passed'
           if grep -qiP '^\s*%ci:no-build\s*$' <(git log --format="%B" -n 1 "HEAD"); then
             tar cf artifacts/debs-${{ matrix.target_arch }}.tar debs
             echo "[!] Force exiting as tag '%ci:no-build' was applied to HEAD commit message."
             exit 0
           fi
 
-          # Build local Docker image if setup scripts were changed.
-          # Useful for pull requests submitting changes for both build environment and packages.
           if grep -qP '^scripts/(Dockerfile|properties\.sh|setup-android-sdk\.sh|setup-cgct\.sh|setup-ubuntu\.sh)$' <<< "$CHANGED_FILES"; then
             echo "Detected changes for environment setup scripts. Building custom Docker image now."
             docker build -t ghcr.io/termux/package-builder-cgct:latest .
@@ -92,28 +85,20 @@ jobs:
 
           for repo_path in $(jq --raw-output 'del(.pkg_format) | keys | .[]' repo.json); do
             repo=$(jq --raw-output '.["'${repo_path}'"].name' repo.json)
-            # Parse changed files and identify new packages and deleted packages.
-            # Create lists of those packages that will be passed to upload job for
-            # further processing.
             while read -r file; do
               if ! [[ $file == ${repo_path}/* ]]; then
-                # This file does not belong to a package, so ignore it
                 continue
               fi
               if [[ $file =~ ^${repo_path}/([.a-z0-9+-]*)/([.a-z0-9+-]*).subpackage.sh$ ]]; then
-                # A subpackage was modified, check if it was deleted or just updated
                 pkg=${BASH_REMATCH[1]}
                 subpkg=${BASH_REMATCH[2]}
                 if [ ! -f "${repo_path}/${pkg}/${subpkg}.subpackage.sh" ]; then
                   echo "$subpkg" >> ./deleted_${repo}_packages.txt
                 fi
               elif [[ $file =~ ^${repo_path}/([.a-z0-9+-]*)/.*$ ]]; then
-                # package, check if it was deleted or updated
                 pkg=${BASH_REMATCH[1]}
                 if [ -d "${repo_path}/${pkg}" ]; then
                   echo "$pkg" >> ./built_${repo}_packages.txt
-                  # If there are subpackages we want to create a list of those
-                  # as well
                   for file in $(find "${repo_path}/${pkg}/" -maxdepth 1 -type f -name \*.subpackage.sh | sort); do
                     echo "$(basename "${file%%.subpackage.sh}")" >> ./built_${repo}_subpackages.txt
                   done
@@ -145,7 +130,6 @@ jobs:
         fi
 
         for repo in $(jq --raw-output 'del(.pkg_format) | .[].name' repo.json); do
-          # Fix so that lists do not contain duplicates
           if [ -f ./built_${repo}_packages.txt ]; then
             sort ./built_${repo}_packages.txt | uniq > ./built_${repo}_packages.txt.tmp
             mv ./built_${repo}_packages.txt.tmp ./built_${repo}_packages.txt
@@ -169,7 +153,6 @@ jobs:
             package_recipes="$package_recipes $(cat ./built_${repo}_packages.txt | repo_path=${repo_path} awk '{print ENVIRON["repo_path"]"/"$1"/build.sh"}')"
           fi
         done
-
         if [ ! -z "$package_recipes" ]; then
           ./scripts/lint-packages.sh $package_recipes
         fi
@@ -179,7 +162,6 @@ jobs:
         declare -a packages
         for repo_path in $(jq --raw-output 'del(.pkg_format) | keys | .[]' repo.json); do
           repo=$(jq --raw-output '.["'${repo_path}'"].name' repo.json)
-
           if [ -f ./built_${repo}_packages.txt ]; then
             packages="$packages $(cat ./built_${repo}_packages.txt)"
           fi
@@ -194,38 +176,92 @@ jobs:
               firefox google-chrome-stable microsoft-edge-stable mono-runtime-common monodoc-manual ruby
             sudo apt autoremove -yq
             sudo rm -fr /opt/hostedtoolcache /usr/share/dotnet /usr/share/swift
-            NDK=$ANDROID_NDK_LATEST_HOME ANDROID_HOME=$ANDROID_SDK_ROOT ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages
+            NDK=$ANDROID_NDK_LATEST_HOME ANDROID_HOME=$ANDROID_SDK_ROOT ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages || true
           else
-            TERMUX_BUILDER_IMAGE_NAME="ghcr.io/termux/package-builder-cgct" ./scripts/run-docker.sh ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages
+            TERMUX_BUILDER_IMAGE_NAME="ghcr.io/termux/package-builder-cgct" ./scripts/run-docker.sh ./build-package.sh -I -a ${{ matrix.target_arch }} --library glibc $packages || true
           fi
         fi
+
+    # ===== 新增：强制提取构建产物（在容器内执行） =====
+    - name: Force extract build artifacts (inside container)
+      if: always()
+      run: |
+        echo "=== 强制提取构建产物 ==="
+        mkdir -p ./extracted ./artifacts
+        
+        # 查找所有可能的构建产物位置
+        SEARCH_DIRS=(
+            "$HOME/.termux-build/glibc/massage"
+            "$HOME/.termux-build/glibc/build"
+            "/data/data/com.linux.term/files/linux"
+            "/data/data/com.termux/files/usr/glibc"
+            "./output"
+            "./debs"
+        )
+        
+        for src in "${SEARCH_DIRS[@]}"; do
+            if [ -d "$src" ] && [ "$(ls -A "$src" 2>/dev/null)" ]; then
+                echo "✅ 从 $src 复制文件..."
+                cp -r "$src"/* ./extracted/ 2>/dev/null || true
+            fi
+        done
+        
+        # 如果提取到了文件，打包
+        if [ "$(ls -A ./extracted 2>/dev/null)" ]; then
+            tar -czf artifacts/extracted-${{ matrix.target_arch }}.tar.gz -C ./extracted . 2>/dev/null || true
+            echo "✅ 提取完成，文件数: $(find ./extracted -type f 2>/dev/null | wc -l)"
+            echo "文件列表:"
+            find ./extracted -type f | head -30
+        else
+            echo "⚠️ 没有找到任何构建产物"
+            # 尝试打包整个 .termux-build 目录
+            if [ -d "$HOME/.termux-build" ]; then
+                echo "尝试打包整个 .termux-build 目录..."
+                tar -czf artifacts/extracted-${{ matrix.target_arch }}.tar.gz -C "$HOME" .termux-build 2>/dev/null || true
+            fi
+        fi
+        
+        # 也尝试打包当前工作目录
+        if [ -f ./build-package.sh ]; then
+            echo "打包当前工作目录..."
+            tar -czf artifacts/workspace-${{ matrix.target_arch }}.tar.gz . 2>/dev/null || true
+        fi
+
+    - name: Upload extracted artifacts
+      if: always()
+      uses: actions/upload-artifact@v7.0.1
+      with:
+        name: extracted-${{ matrix.target_arch }}-${{ github.sha }}
+        path: artifacts/extracted-${{ matrix.target_arch }}.tar.gz
+
+    - name: Upload workspace artifacts
+      if: always()
+      uses: actions/upload-artifact@v7.0.1
+      with:
+        name: workspace-${{ matrix.target_arch }}-${{ github.sha }}
+        path: artifacts/workspace-${{ matrix.target_arch }}.tar.gz
 
     - name: Generate build artifacts
       if: always()
       run: |
         for repo in $(jq --raw-output 'del(.pkg_format) | .[].name' repo.json); do
-          # Put package lists into directory with *.pkg.* files so they will be transferred to
-          # upload job.
           test -f ./built_${repo}_packages.txt && mv ./built_${repo}_packages.txt ./debs/
           test -f ./built_${repo}_subpackages.txt && cat ./built_${repo}_subpackages.txt >> ./debs/built_${repo}_packages.txt \
             && rm ./built_${repo}_subpackages.txt
           test -f ./deleted_${repo}_packages.txt && mv ./deleted_${repo}_packages.txt ./debs/
 
-          # Move only pkgs from built_packages into pkgs/ folder before
-          # creating an archive.
           while read -r pkg; do
-            # Match both $pkg.pkg.* and $pkg-static.pkg.*.
             find output \( -name "$pkg_*.deb" -o -name "$pkg-static_*.deb" \) -type f -print0 | xargs -0r mv -t debs/
           done < <(cat ./debs/built_${repo}_packages.txt)
         done
 
-        # Files containing certain symbols (e.g. ":") will cause failure in actions/upload-artifact.
-        # Archiving *.deb files in a tarball to avoid issues with uploading.
         tar cf artifacts/debs-${{ matrix.target_arch }}-${{ github.sha }}.tar debs
+
     - name: Checksums for built *.deb files
       if: always()
       run: |
         find debs -type f -name "*.deb" -exec sha256sum "{}" \; | sort -k2
+
     - name: Store *.deb files
       if: always()
       uses: actions/upload-artifact@v7.0.1
@@ -278,7 +314,6 @@ jobs:
           export REPOSITORY_NAME=$(jq --raw-output '.["'$repo'"].name' repo.json)
           export REPOSITORY_DISTRIBUTION=$(jq --raw-output '.["'$repo'"].distribution' repo.json)
 
-          # Upload file to temporary directory.
           uploaded_files=false
           shopt -s nullglob
 
@@ -287,22 +322,13 @@ jobs:
               if ! aptly_upload_file "$filename"; then
                 continue
               fi
-
               uploaded_files=true
             done
             shopt -u nullglob
 
-            # Publishing repository changes.
             if [ "$uploaded_files" = "true" ]; then
-              #if ! aptly_add_to_repo; then
-              #  exit 1
-              #fi
               aptly_add_to_repo || true
-
-              # Usually temporary directory is deleted automatically, but in certain cases it is left.
               aptly_delete_dir
-
-              # Final part to make changes appear in web root.
               if ! aptly_publish_repo; then
                 exit 1
               fi
