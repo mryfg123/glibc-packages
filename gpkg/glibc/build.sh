@@ -180,7 +180,7 @@ termux_step_make_install() {
 		LD_PRELOAD="" LD_LIBRARY_PATH="" /system/bin/cp -r ${glibc_dir}/${TERMUX__PREFIX__LIB_DIR}/* ${TERMUX__PREFIX__LIB_DIR}
 	fi
 	echo $TERMUX_PKG_MASSAGEDIR
-	make install DESTDIR=$TERMUX_PKG_MASSAGEDIR
+	make install 
 
 	rm -f ${TERMUX_PREFIX}/etc/ld.so.cache
 	rm -f ${TERMUX_PREFIX}/bin/{tzselect,zdump,zic}
@@ -217,7 +217,7 @@ termux_step_make_install() {
 termux_step_make_install_multilib() {
 	local glibc32_dir="${TERMUX_PKG_TMPDIR}/glibc32/"
 	mkdir -p ${glibc32_dir}
-	make DESTDIR=${glibc32_dir} install
+	make DESTDIR=${glibc32_dir}/$TERMUX_PREFIX install
 
 	cp -TR ${glibc32_dir}/${TERMUX__PREFIX__LIB_DIR} $TERMUX__PREFIX__LIB_DIR
 	cp -TR ${glibc32_dir}/${TERMUX__PREFIX__INCLUDE_DIR} $TERMUX__PREFIX__INCLUDE_DIR
