@@ -25,7 +25,7 @@ termux_step_configure() {
 		optflags='no-sse2'
 	fi
 
-	./Configure --prefix=$TERMUX_PREFIX --openssldir=$TERMUX_PREFIX/etc/ssl --libdir=lib \
+	./Configure --prefix=/data/data/com.linux.term/files/linux --openssldir=/data/data/com.linux.term/files/linux/etc/ssl --libdir=lib \
 		shared enable-ktls ${optflags} "${openssltarget}"
 }
 
@@ -35,7 +35,7 @@ termux_step_make() {
 }
 
 termux_step_make_install() {
-	make MANDIR=$TERMUX_PREFIX/share/man MANSUFFIX=ssl install_sw install_ssldirs install_man_docs
-	ln -s $TERMUX_PREFIX_CLASSICAL/etc/resolv.conf $TERMUX_PREFIX/etc
-	ln -s $TERMUX_PREFIX_CLASSICAL/etc/hosts $TERMUX_PREFIX/etc
+	make MANDIR=/data/data/com.linux.term/files/linux/share/man MANSUFFIX=ssl install_sw install_ssldirs install_man_docs
+	ln -s $TERMUX_PREFIX_CLASSICAL/etc/resolv.conf /data/data/com.linux.term/files/linux/etc
+	ln -s $TERMUX_PREFIX_CLASSICAL/etc/hosts /data/data/com.linux.term/files/linux/etc
 }
