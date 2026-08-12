@@ -8,7 +8,7 @@
 -#endif
 -#ifndef STANDARD_STARTFILE_PREFIX_2
 -#define STANDARD_STARTFILE_PREFIX_2 "/usr/lib/"
-+#define STANDARD_STARTFILE_PREFIX_1 "@TERMUX_PREFIX@/lib/"
++#define STANDARD_STARTFILE_PREFIX_1 "/data/data/com.linux.term/files/linux/lib/"
  #endif
  
  #ifdef CROSS_DIRECTORY_STRUCTURE  /* Don't use these prefixes for a cross compiler.  */

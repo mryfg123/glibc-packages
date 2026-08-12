@@ -6,7 +6,7 @@
       AIX loader always searches for libraries.  */
 -  add_prefix (&libpath_lib_dirs, "/lib");
 -  add_prefix (&libpath_lib_dirs, "/usr/lib");
-+  add_prefix (&libpath_lib_dirs, "@TERMUX_PREFIX@/lib");
++  add_prefix (&libpath_lib_dirs, "/data/data/com.linux.term/files/linux/lib");
  #endif
  
    /* Get any options that the upper GCC wants to pass to the sub-GCC.
@@ -28,12 +28,12 @@
 -  "/usr/ccs/lib/libm.a",
 -  "/usr/ccs/lib/libc_r.a",
 -  "/usr/ccs/lib/libm_r.a",
-+  "@TERMUX_PREFIX@/lib/unix",
-+  "@TERMUX_PREFIX@/lib/libc.a",
-+  "@TERMUX_PREFIX@/lib/libm.a",
-+  "@TERMUX_PREFIX@/lib/libc_r.a",
-+  "@TERMUX_PREFIX@/lib/libm_r.a",
-+  "@TERMUX_PREFIX@/lib/threads/libc.a",
++  "/data/data/com.linux.term/files/linux/lib/unix",
++  "/data/data/com.linux.term/files/linux/lib/libc.a",
++  "/data/data/com.linux.term/files/linux/lib/libm.a",
++  "/data/data/com.linux.term/files/linux/lib/libc_r.a",
++  "/data/data/com.linux.term/files/linux/lib/libm_r.a",
++  "/data/data/com.linux.term/files/linux/lib/threads/libc.a",
    NULL
  };
  

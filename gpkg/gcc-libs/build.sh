@@ -53,15 +53,15 @@ termux_step_configure() {
 		--host=$TERMUX_HOST_PLATFORM \
 		--build=$TERMUX_HOST_PLATFORM \
 		--target=$TERMUX_HOST_PLATFORM \
-		--prefix=$TERMUX_PREFIX \
-		--libdir=$TERMUX_PREFIX/lib \
-		--libexecdir=$TERMUX_PREFIX/lib \
-		--mandir=$TERMUX_PREFIX/share/man \
-		--infodir=$TERMUX_PREFIX/share/info \
+		--prefix=/data/data/com.linux.term/files/linux \
+		--libdir=/data/data/com.linux.term/files/linux/lib \
+		--libexecdir=/data/data/com.linux.term/files/linux/lib \
+		--mandir=/data/data/com.linux.term/files/linux/share/man \
+		--infodir=/data/data/com.linux.term/files/linux/share/info \
 		--with-bugurl=https://github.com/termux-pacman/glibc-packages/issues \
-		--with-gmp=$TERMUX_PREFIX \
-		--with-mpfr=$TERMUX_PREFIX \
-		--with-mpc=$TERMUX_PREFIX \
+		--with-gmp=/data/data/com.linux.term/files/linux \
+		--with-mpfr=/data/data/com.linux.term/files/linux \
+		--with-mpc=/data/data/com.linux.term/files/linux \
 		--enable-clocale=gnu \
 		$CONFIGFLAG \
 		--disable-multilib \
@@ -69,7 +69,8 @@ termux_step_configure() {
 		--disable-nls \
 		--enable-default-pie \
 		--enable-default-ssp \
-		--enable-languages=c,c++,fortran \
+		--enable-languages=c,c++,fortran
+		--with-sysroot=/data/data/com.linux.term/files/linux \
 		--with-system-zlib \
 		--enable-__cxa_atexit \
 		--enable-linker-build-id \
@@ -82,7 +83,7 @@ termux_step_configure() {
 		--enable-host-shared \
 		--disable-libssp \
 		--disable-libstdcxx-pch \
-		LD_FOR_TARGET=$TERMUX_PREFIX/bin/ld || (cat config.log && exit 1)
+		LD_FOR_TARGET=/data/data/com.linux.term/files/linux/bin/ld || (cat config.log && exit 1)
 }
 
 termux_step_make() {
@@ -90,7 +91,7 @@ termux_step_make() {
 }
 
 termux_step_make_install() {
-	local _libdir=$TERMUX_PREFIX/lib/gcc/$TERMUX_HOST_PLATFORM/${TERMUX_PKG_VERSION%%+*}
+	local _libdir=/data/data/com.linux.term/files/linux/lib/gcc/$TERMUX_HOST_PLATFORM/${TERMUX_PKG_VERSION%%+*}
 
 	# --- gcc-libs ---
 	make -C $TERMUX_HOST_PLATFORM/libgcc install-shared
@@ -122,7 +123,7 @@ termux_step_make_install() {
 	make -C gcc install-driver install-cpp install-gcc-ar \
 		c++.install-common install-headers install-plugin install-lto-wrapper
 
-	install -m755 -t $TERMUX_PREFIX/bin/ gcc/gcov{,-tool}
+	install -m755 -t /data/data/com.linux.term/files/linux/bin/ gcc/gcov{,-tool}
 	install -m755 -t ${_libdir}/ gcc/{cc1,cc1plus,collect2,lto1}
 
 	make -C $TERMUX_HOST_PLATFORM/libgcc install
@@ -133,19 +134,19 @@ termux_step_make_install() {
 	make -C $TERMUX_HOST_PLATFORM/libstdc++-v3/python install
 
 	make install-libcc1
-	if [ -f $TERMUX_PREFIX/lib/libstdc++.so.6.*-gdb.py ]; then
-		install -d $TERMUX_PREFIX/share/gdb/auto-load/usr/lib
-		mv $TERMUX_PREFIX/lib/libstdc++.so.6.*-gdb.py \
-			$TERMUX_PREFIX/share/gdb/auto-load/usr/lib/
+	if [ -f /data/data/com.linux.term/files/linux/lib/libstdc++.so.6.*-gdb.py ]; then
+		install -d /data/data/com.linux.term/files/linux/share/gdb/auto-load/usr/lib
+		mv /data/data/com.linux.term/files/linux/lib/libstdc++.so.6.*-gdb.py \
+			/data/data/com.linux.term/files/linux/share/gdb/auto-load/usr/lib/
 	fi
 
 	make install-fixincludes
 	make -C gcc install-mkheaders
 
 	make -C lto-plugin install
-	install -dm755 $TERMUX_PREFIX/lib/bfd-plugins/
+	install -dm755 /data/data/com.linux.term/files/linux/lib/bfd-plugins/
 	ln -s /${_libdir}/liblto_plugin.so \
-		$TERMUX_PREFIX/lib/bfd-plugins/
+		/data/data/com.linux.term/files/linux/lib/bfd-plugins/
 
 	make -C $TERMUX_HOST_PLATFORM/libgomp install-nodist_{libsubinclude,toolexeclib}HEADERS
 	make -C $TERMUX_HOST_PLATFORM/libitm install-nodist_toolexeclibHEADERS
@@ -162,13 +163,13 @@ termux_step_make_install() {
 	make -C libcpp install
 	make -C gcc install-po
 
-	ln -s gcc $TERMUX_PREFIX/bin/cc
+	ln -s gcc /data/data/com.linux.term/files/linux/bin/cc
 
-	install -Dm755 $TERMUX_PKG_BUILDER_DIR/c89 $TERMUX_PREFIX/bin/c89
-	install -Dm755 $TERMUX_PKG_BUILDER_DIR/c99 $TERMUX_PREFIX/bin/c99
+	install -Dm755 $TERMUX_PKG_BUILDER_DIR/c89 /data/data/com.linux.term/files/linux/bin/c89
+	install -Dm755 $TERMUX_PKG_BUILDER_DIR/c99 /data/data/com.linux.term/files/linux/bin/c99
 
-	python -m compileall $TERMUX_PREFIX/share/gcc-${TERMUX_PKG_VERSION%%+*}/
-	python -O -m compileall $TERMUX_PREFIX/share/gcc-${TERMUX_PKG_VERSION%%+*}/
+	python -m compileall /data/data/com.linux.term/files/linux/share/gcc-${TERMUX_PKG_VERSION%%+*}/
+	python -O -m compileall /data/data/com.linux.term/files/linux/share/gcc-${TERMUX_PKG_VERSION%%+*}/
 
 	# --- gcc-fortran ---
 
@@ -178,15 +179,15 @@ termux_step_make_install() {
 	make -C gcc fortran.install-{common,man,info}
 	install -Dm755 gcc/f951 ${_libdir}/f951
 
-	ln -s gfortran $TERMUX_PREFIX/bin/f95
+	ln -s gfortran /data/data/com.linux.term/files/linux/bin/f95
 
-	if [ -d $TERMUX_PREFIX/lib64 ]; then
-		mv $TERMUX_PREFIX/lib64/* $TERMUX_PREFIX/lib
-		rm -fr $TERMUX_PREFIX/lib64
+	if [ -d /data/data/com.linux.term/files/linux/lib64 ]; then
+		mv /data/data/com.linux.term/files/linux/lib64/* /data/data/com.linux.term/files/linux/lib
+		rm -fr /data/data/com.linux.term/files/linux/lib64
 	fi
 
-	if [ -d $TERMUX_PREFIX/lib32 ]; then
-		mv $TERMUX_PREFIX/lib32/* $TERMUX_PREFIX/lib
-		rm -fr $TERMUX_PREFIX/lib32
+	if [ -d /data/data/com.linux.term/files/linux/lib32 ]; then
+		mv /data/data/com.linux.term/files/linux/lib32/* /data/data/com.linux.term/files/linux/lib
+		rm -fr /data/data/com.linux.term/files/linux/lib32
 	fi
 }
