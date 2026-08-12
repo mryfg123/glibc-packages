@@ -5,7 +5,7 @@
  
  # Default values for various configuration settings.
 -my $CATOP = "./demoCA";
-+my $CATOP = "@TERMUX_PREFIX@/etc/ssl";
++my $CATOP =  "/data/data/com.linux.term/files/linux/etc/ssl";
  my $CAKEY = "cakey.pem";
  my $CAREQ = "careq.pem";
  my $CACERT = "cacert.pem";
@@ -16,7 +16,7 @@
  [ CA_default ]
  
 -dir		= ./demoCA		# Where everything is kept
-+dir		= @TERMUX_PREFIX@/etc/ssl		# Where everything is kept
++dir		= /data/data/com.linux.term/files/linux/etc/ssl		# Where everything is kept
  certs		= $dir/certs		# Where the issued certs are kept
  crl_dir		= $dir/crl		# Where the issued crl are kept
  database	= $dir/index.txt	# database index file.
@@ -25,7 +25,7 @@
  
  # These are used by the TSA reply generation only.
 -dir		= ./demoCA		# TSA root directory
-+dir		= @TERMUX_PREFIX@/etc/ssl		# TSA root directory
++dir		= /data/local/tmp/linux/etc/ssl		# TSA root directory
  serial		= $dir/tsaserial	# The current serial number (mandatory)
  crypto_device	= builtin		# OpenSSL engine to use for signing
  signer_cert	= $dir/tsacert.pem 	# The TSA signing certificate
